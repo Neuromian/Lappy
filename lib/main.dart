@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:provider/provider.dart';
+import 'package:lappy/models/app_settings.dart';
+import 'package:lappy/views/settings_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,13 +33,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Lappy LLM Client',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
+    return ChangeNotifierProvider(
+      create: (context) => AppSettings(),
+      child: MaterialApp(
+        title: 'Lappy LLM Client',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          useMaterial3: true,
+        ),
+        home: const MainScreen(),
       ),
-      home: const MainScreen(),
     );
   }
 }
@@ -157,9 +163,12 @@ class _MainScreenState extends State<MainScreen> with TrayListener, WindowListen
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Lappy LLM Client'),
         leading: IconButton(
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.settings),
           onPressed: () {
-            // TODO: 实现菜单功能
+            // 打开设置页面
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const SettingsView()),
+            );
           },
         ),
         actions: [
