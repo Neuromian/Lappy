@@ -1,0 +1,34 @@
+# 开发进度和日志记录
+
+## 2025-02-28
+- 创建Flutter项目：lappy
+- 配置中国镜像源：flutter_env.bat
+- 创建开发进度文档和LLM log文档
+- 更新pubspec.yaml文件，添加必要的依赖项
+- 运行flutter pub get，成功获取依赖包
+- 升级依赖包版本：
+  - tray_manager: ^0.2.0 → ^0.3.2
+  - window_manager: ^0.3.0 → ^0.4.3
+  - flutter_lints: ^2.0.0 → ^5.0.0
+- 运行flutter pub get，成功获取升级后的依赖包
+- 修复main.dart文件中的导入冲突和语法错误
+- 实现系统托盘功能：
+  - 初始化系统托盘
+  - 添加显示和退出菜单项
+  - 设置托盘图标和工具提示
+- 实现主界面UI：
+  - 创建消息输入框和发送按钮
+  - 实现消息气泡组件
+  - 添加消息列表和清空功能
+  - 合并development_progress.txt和llm_log.txt文件
+  - 删除旧的development_progress.txt和llm_log.txt文件
+  - 修复pubspec.yaml文件中的字体目录配置
+  - 移除pubspec.yaml文件中的system_tray: ^2.0.3，并使用tray_manager: ^0.3.2替代
+
+## 2025-02-29
+- 调整窗口配置：
+  - 将标题栏样式从隐藏(TitleBarStyle.hidden)改为正常显示(TitleBarStyle.normal)
+  - 启用任务栏显示(skipTaskbar: false)
+  - 完成基本UI布局和系统托盘集成
+  - 实现窗口隐藏/显示功能
+  - 实现消息发送和显示功能
