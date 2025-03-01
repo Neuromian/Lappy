@@ -56,9 +56,11 @@
   - 优化设置页面的图标和布局
 
 ## 2025-03-02
-- 完成FluentUI迁移：
-  - 将所有Material组件替换为FluentUI组件
+- 完成FluentUI部分迁移：
+  - 将main.dart所有Material组件替换为FluentUI组件
   - 优化设置页面的TabView布局
+  - 全局统一使用 misans 字体
   - 统一应用程序的视觉风格
   - 更新对话框和信息提示的样式
   - 调整按钮和图标的显示效果
+  - settings 页面向fluent ui迁移（进行中）

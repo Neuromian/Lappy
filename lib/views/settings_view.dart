@@ -1,9 +1,9 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:lappy/models/app_settings.dart';
-import 'package:lappy/views/settings/api_settings_view.dart';
-import 'package:lappy/views/settings/shortcut_settings_view.dart';
-import 'package:lappy/views/settings/data_settings_view.dart';
+import 'package:lappy/views/settings/api_settings.dart';
+import 'package:lappy/views/settings/shortcut_settings.dart';
+import 'package:lappy/views/settings/data_settings.dart';
 
 /// 设置页面
 class SettingsView extends StatefulWidget {
@@ -75,28 +75,32 @@ class _SettingsViewState extends State<SettingsView> {
           ),
         ),
       ),
-      content: TabView(
-        currentIndex: _currentIndex,
+      pane: NavigationPane(
+        selected: _currentIndex,
         onChanged: (index) => setState(() => _currentIndex = index),
-        tabs: [
-          Tab(
-            text: const Text('API配置'),
+        displayMode: PaneDisplayMode.compact,
+        size: const NavigationPaneSize(
+          openMinWidth: 200,
+          openMaxWidth: 250,
+          compactWidth: 50,
+        ),
+        items: [
+          PaneItem(
             icon: const Icon(FluentIcons.code),
-            body: const ApiSettingsView(),
+            title: const Text('API配置'),
+            body: const ApiSettingsPage(),
           ),
-          Tab(
-            text: const Text('快捷键'),
+          PaneItem(
             icon: const Icon(FluentIcons.keyboard_classic),
-            body: const ShortcutSettingsView(),
+            title: const Text('快捷键'),
+            body: const ShortcutSettingsPage(),
           ),
-          Tab(
-            text: const Text('数据管理'),
-            icon: Icon(FluentIcons.database),
-            body: const DataSettingsView(),
+          PaneItem(
+            icon: const Icon(FluentIcons.database),
+            title: const Text('数据管理'),
+            body: const DataSettingsPage(),
           ),
         ],
-        tabWidthBehavior: TabWidthBehavior.equal,
-        closeButtonVisibility: CloseButtonVisibilityMode.never,
       ),
     );
   }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' hide Colors, IconButton, CircularProgressIndicator;
+import 'package:flutter/material.dart' hide Colors, IconButton, CircularProgressIndicator, ButtonStyle;
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:provider/provider.dart';
@@ -223,21 +223,48 @@ class _MainScreenState extends State<MainScreen> with TrayListener, WindowListen
             ),
           Padding(
             padding: const EdgeInsets.all(8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextBox(
-                    controller: _controller,
-                    placeholder: 'Type your message...',
-                    onSubmitted: (_) => _sendMessage(),
-                  ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: FluentTheme.of(context).micaBackgroundColor.withOpacity(0.7),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(FluentIcons.send),
-                  onPressed: _sendMessage,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextBox(
+                        controller: _controller,
+                        placeholder: 'Type your message...',
+                        onSubmitted: (_) => _sendMessage(),
+                        style: const TextStyle(fontSize: 16),
+                        decoration: ButtonState.all(BoxDecoration(
+                          border: null,
+                          borderRadius: BorderRadius.circular(16),
+                        )),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: IconButton(
+                        icon: const Icon(FluentIcons.send),
+                        onPressed: _sendMessage,
+                        style: ButtonStyle(
+                          padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
+                          backgroundColor: WidgetStateProperty.all(Colors.green.withAlpha(25)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -267,37 +294,55 @@ class MessageBubble extends StatelessWidget {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        constraints: const BoxConstraints(maxWidth: 400),
         decoration: BoxDecoration(
-          color: isUser ? Colors.blue.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: isUser 
+              ? [Colors.blue.withAlpha(76), Colors.blue.withAlpha(127)]
+              : [Colors.grey.withAlpha(76), Colors.grey.withAlpha(127)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(isUser ? 16 : 4),
+            topRight: Radius.circular(isUser ? 4 : 16),
+            bottomLeft: const Radius.circular(16),
+            bottomRight: const Radius.circular(16),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: (isUser ? Colors.blue : Colors.grey).withAlpha(25),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(text),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  time.toLocal().toString().split('.')[0],
-                  style: FluentTheme.of(context).typography.caption,
-                ),
-                if (!isUser && model != null) ...[                  
-                  const SizedBox(width: 8),
-                  Text(
-                    'Model: $model',
-                    style: FluentTheme.of(context).typography.caption,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Tokens: $tokens',
-                    style: FluentTheme.of(context).typography.caption,
-                  ),
+            Text(
+              text,
+              style: const TextStyle(fontSize: 15, height: 1.4),
+            ),
+            const SizedBox(height: 6),
+            DefaultTextStyle(
+              style: FluentTheme.of(context).typography.caption!.copyWith(
+                color: (isUser ? Colors.blue : Colors.grey).withAlpha(200),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(time.toLocal().toString().split('.')[0]),
+                  if (!isUser && model != null) ...[                  
+                    const SizedBox(width: 8),
+                    Text('Model: $model'),
+                    const SizedBox(width: 8),
+                    Text('Tokens: $tokens'),
+                  ],
                 ],
-              ],
+              ),
             ),
           ],
         ),
