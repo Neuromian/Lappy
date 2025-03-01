@@ -1,69 +1,29 @@
-# 开发进度和日志记录
+# 开发日志
 
-## 2025-02-29
-- 创建Flutter项目：lappy
-- 配置中国镜像源：flutter_env.bat
-- 创建开发进度文档和LLM log文档
-- 更新pubspec.yaml文件，添加必要的依赖项
-- 运行flutter pub get，成功获取依赖包
-- 升级依赖包版本：
-  - tray_manager: ^0.2.0 → ^0.3.2
-  - window_manager: ^0.3.0 → ^0.4.3
-  - flutter_lints: ^2.0.0 → ^5.0.0
-- 运行flutter pub get，成功获取升级后的依赖包
-- 修复main.dart文件中的导入冲突和语法错误
-- 实现系统托盘功能：
-  - 初始化系统托盘
-  - 添加显示和退出菜单项
-  - 设置托盘图标和工具提示
-- 实现主界面UI：
-  - 创建消息输入框和发送按钮
-  - 实现消息气泡组件
-  - 添加消息列表和清空功能
-  - 合并development_progress.txt和llm_log.txt文件
-  - 删除旧的development_progress.txt和llm_log.txt文件
-  - 修复pubspec.yaml文件中的字体目录配置
-  - 移除pubspec.yaml文件中的system_tray: ^2.0.3，并使用tray_manager: ^0.3.2替代
-- 调整窗口配置：
-  - 将标题栏样式从隐藏(TitleBarStyle.hidden)改为正常显示(TitleBarStyle.normal)
-  - 启用任务栏显示(skipTaskbar: false)
-  - 完成基本UI布局和系统托盘集成
-  - 实现窗口隐藏/显示功能
-  - 实现消息发送和显示功能
+## 2024-01-09
 
-## 2025-03-01
-- 实现设置页面：
-  - 创建TabBar布局，包含API配置、快捷键和数据管理三个标签页
-  - 实现API配置页面：
-    - 添加、编辑和删除API配置
-    - 设置默认API配置
-    - 支持OpenAI和自定义API提供商
-  - 实现快捷键设置页面：
-    - 自定义发送消息快捷键
-    - 支持组合键设置
-  - 实现数据管理页面：
-    - 自定义缓存目录设置
-    - 自动备份功能（开关、间隔、数量限制）
-    - 数据导出功能
-    - 数据清空功能（带确认对话框）
-- 实现数据持久化：
-  - 使用SharedPreferences存储设置
-  - 实现配置模型类和管理器
-  - 添加数据导入导出功能
-- 修复问题：
-  - 统一处理不同操作系统的路径分隔符
-  - 修复文件选择器在不同平台的兼容性问题
-  - 优化设置页面的图标和布局
+### 聊天功能改进
+- 实现了流式响应功能
+  - 支持实时显示AI回复内容
+  - 优化了token计数估算
+  - 添加了模型信息显示
+- 改进了会话管理
+  - 实现了会话的创建、切换、重命名和删除
+  - 优化了消息存储和加载逻辑
+  - 添加了清空当前会话的功能
 
-## 2025-03-02
-- 完成FluentUI部分迁移：
-  - 将main.dart所有Material组件替换为FluentUI组件
-  - 优化设置页面的TabView布局
-  - 全局统一使用 misans 字体
-  - 统一应用程序的视觉风格
-  - 更新对话框和信息提示的样式
-  - 调整按钮和图标的显示效果
-  - settings 页面向fluent ui迁移，参考了 llm\reference\fluent_ui\navigation_view.dart
-  - main 页面向fluent_ui迁移，参考了 llm\reference\fluent_ui\navigation_view.dart
-  - settings 和 mian 页面的控件修复，包括发送键，导航栏，气泡效果，paneitem焦点控制等
+## 2024-01-08
+
+### API设置页面改进
+- 重新设计了API设置页面的布局，采用左右分栏设计
+  - 左侧显示已保存的API配置列表
+  - 右侧为新建配置表单
+- 为ChatGLM添加了默认的API端点配置
+  - OpenAI默认端点：https://api.openai.com/v1
+  - ChatGLM默认端点：https://open.bigmodel.cn/api/paas/v4/chat/completions
+
+### 问题修复
+- 修复了配置页面中重复内容的问题
+- 修复了相关的类型错误
+- 优化了配置管理的逻辑
   

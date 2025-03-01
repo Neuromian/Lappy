@@ -1,0 +1,378 @@
+import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:lappy/controllers/chat_controller.dart';
+import 'package:lappy/services/chat_service.dart';
+import 'package:lappy/models/app_settings.dart';
+
+/// 聊天视图组件
+class ChatView extends StatefulWidget {
+  const ChatView({super.key});
+
+  @override
+  State<ChatView> createState() => _ChatViewState();
+}
+
+class _ChatViewState extends State<ChatView> {
+  final TextEditingController _messageController = TextEditingController();
+  final FocusNode _messageFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
+  late ChatController _chatController;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatController = Get.put(ChatController());
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _messageFocusNode.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // 滚动到底部
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  // 发送消息
+  void _sendMessage() {
+    final text = _messageController.text.trim();
+    if (text.isEmpty || _chatController.isLoading) return;
+
+    // 使用流式响应
+    _chatController.sendMessageStream(text);
+    _messageController.clear();
+    _messageFocusNode.requestFocus();
+  }
+
+  // 创建新会话
+  void _createNewSession() {
+    _chatController.createNewSession();
+  }
+
+  // 清空当前会话消息
+  void _clearCurrentSessionMessages() {
+    showDialog(
+      context: context,
+      builder: (context) => ContentDialog(
+        title: const Text('确认清空'),
+        content: const Text('确定要清空当前会话的所有消息吗？此操作无法撤销。'),
+        actions: [
+          Button(
+            child: const Text('取消'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          FilledButton(
+            child: const Text('确认'),
+            onPressed: () {
+              _chatController.clearCurrentSessionMessages();
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 删除会话
+  void _deleteSession(String id) {
+    showDialog(
+      context: context,
+      builder: (context) => ContentDialog(
+        title: const Text('确认删除'),
+        content: const Text('确定要删除这个会话吗？此操作无法撤销。'),
+        actions: [
+          Button(
+            child: const Text('取消'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          FilledButton(
+            child: const Text('确认'),
+            onPressed: () {
+              _chatController.deleteSession(id);
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 重命名会话
+  void _renameSession(String id, String currentTitle) {
+    final TextEditingController titleController = TextEditingController(text: currentTitle);
+    
+    showDialog(
+      context: context,
+      builder: (context) => ContentDialog(
+        title: const Text('重命名会话'),
+        content: TextBox(
+          controller: titleController,
+          placeholder: '请输入新的会话名称',
+          autofocus: true,
+        ),
+        actions: [
+          Button(
+            child: const Text('取消'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          FilledButton(
+            child: const Text('确认'),
+            onPressed: () {
+              final newTitle = titleController.text.trim();
+              if (newTitle.isNotEmpty) {
+                _chatController.renameSession(id, newTitle);
+              }
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    ).then((_) => titleController.dispose());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final currentSession = _chatController.currentSession;
+      final sessions = _chatController.sessions;
+      
+      final navigationPane = NavigationPane(
+        selected: _chatController.currentSessionIndex,
+        displayMode: PaneDisplayMode.compact,
+        size: const NavigationPaneSize(
+          openMinWidth: 200,
+          openMaxWidth: 250,
+          compactWidth: 50,
+        ),
+        items: [
+          PaneItemHeader(header: const Text('会话历史')),
+          ...sessions.asMap().entries.map((entry) => PaneItem(
+            icon: const Icon(FluentIcons.chat),
+            title: Text(entry.value.title),
+            body: const SizedBox.shrink(),
+            onTap: () => _chatController.switchSession(entry.key),
+            trailing: IconButton(
+              icon: const Icon(FluentIcons.more),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => ContentDialog(
+                    title: Text(entry.value.title),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Button(
+                          child: const Text('重命名'),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _renameSession(entry.value.id, entry.value.title);
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        Button(
+                          child: const Text('删除'),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _deleteSession(entry.value.id);
+                          },
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      Button(
+                        child: const Text('关闭'),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          )),
+        ],
+        footerItems: [
+          PaneItem(
+            icon: const Icon(FluentIcons.add),
+            title: const Text('新的会话'),
+            body: const SizedBox.shrink(),
+            onTap: _createNewSession,
+          ),
+          PaneItem(
+            icon: const Icon(FluentIcons.delete),
+            title: const Text('清空对话'),
+            body: const SizedBox.shrink(),
+            onTap: _clearCurrentSessionMessages,
+          ),
+        ],
+      );
+
+      return NavigationView(
+        paneBodyBuilder: (item, _) {
+          return ScaffoldPage(
+            content: currentSession == null
+                ? const Center(child: Text('没有会话，请创建一个新会话'))
+                : Column(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(8),
+                          itemCount: currentSession.messages.length,
+                          itemBuilder: (context, index) {
+                            final message = currentSession.messages[index];
+                            WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+                            return MessageBubble(
+                              message: message,
+                            );
+                          },
+                        ),
+                      ),
+                      if (_chatController.isLoading)
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: ProgressRing(),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: FluentTheme.of(context)
+                                  .micaBackgroundColor
+                                  .withOpacity(0.7),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextBox(
+                                    controller: _messageController,
+                                    focusNode: _messageFocusNode,
+                                    placeholder: '输入消息...',
+                                    onSubmitted: (_) => _sendMessage(),
+                                    style: const TextStyle(fontSize: 16),
+                                    decoration: ButtonState.all(BoxDecoration(
+                                      color: FluentTheme.of(context).micaBackgroundColor.withOpacity(0.7),
+                                      border: null,
+                                      borderRadius: BorderRadius.circular(16),
+                                    )),
+                                    suffix: IconButton(
+                                      icon: const Icon(FluentIcons.send),
+                                      onPressed: _sendMessage,
+                                      style: ButtonStyle(
+                                        padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
+                                        backgroundColor: WidgetStateProperty.resolveWith((states) {
+                                          if (states.isHovering) {
+                                            return Colors.green.withAlpha(40);
+                                          }
+                                          return Colors.transparent;
+                                        }),
+                                        shape: ButtonState.all(const CircleBorder()),
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+          );
+        },
+        pane: navigationPane,
+      );
+    });
+  }
+}
+
+/// 消息气泡组件
+class MessageBubble extends StatelessWidget {
+  final ChatMessage message;
+
+  const MessageBubble({
+    super.key,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        constraints: const BoxConstraints(maxWidth: 400),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: message.isUser
+                ? [Colors.blue.withAlpha(25), Colors.blue.withAlpha(50)]
+                : [Colors.grey.withAlpha(25), Colors.grey.withAlpha(50)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(message.isUser ? 16 : 4),
+            topRight: Radius.circular(message.isUser ? 4 : 16),
+            bottomLeft: const Radius.circular(16),
+            bottomRight: const Radius.circular(16),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: (message.isUser ? Colors.blue : Colors.grey).withAlpha(15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SelectableText(
+              message.content,
+              style: const TextStyle(fontSize: 15, height: 1.4),
+            ),
+            const SizedBox(height: 6),
+            DefaultTextStyle(
+              style: FluentTheme.of(context).typography.caption!.copyWith(
+                    color: (message.isUser ? Colors.blue : Colors.grey).withAlpha(200),
+                  ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(message.time.toLocal().toString().split('.')[0]),
+                  if (!message.isUser && message.model != null) ...[                    
+                    const SizedBox(width: 8),
+                    Text('Model: ${message.model}'),
+                    const SizedBox(width: 8),
+                    Text('Tokens: ${message.tokens}'),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

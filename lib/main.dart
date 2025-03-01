@@ -11,6 +11,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:lappy/models/app_settings.dart';
 import 'package:lappy/views/settings_view.dart';
+import 'package:lappy/views/chat_view.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 
@@ -79,18 +80,6 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen>
     with TrayListener, WindowListener {
-  final TextEditingController _controller = TextEditingController();
-  final List<Map<String, dynamic>> _messages = [];
-  final List<Map<String, dynamic>> _chats = [
-    {
-      'id': '0',
-      'title': '新会话 1',
-      'messages': [],
-      'focusNode': FocusNode(),
-    }
-  ];
-  int _selectedChatIndex = 0;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -104,10 +93,6 @@ class _MainScreenState extends State<MainScreen>
   void dispose() {
     trayManager.removeListener(this);
     windowManager.removeListener(this);
-    _controller.dispose();
-    for (var chat in _chats) {
-      chat['focusNode'].dispose();
-    }
     super.dispose();
   }
 
@@ -141,66 +126,8 @@ class _MainScreenState extends State<MainScreen>
     }
   }
 
-  void _sendMessage() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty || _isLoading) return;
-
-    setState(() {
-      _chats[_selectedChatIndex]['messages'].add({
-        'text': text,
-        'time': DateTime.now(),
-        'isUser': true,
-        'model': null,
-        'tokens': 0,
-      });
-      _messages.clear();
-      _messages.addAll(List<Map<String, dynamic>>.from(_chats[_selectedChatIndex]['messages']));
-      _controller.clear();
-      _isLoading = true;
-    });
-
-    // 模拟API调用延迟
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() {
-      final response = {
-        'text': '你好！我是Lappy，一个模拟的AI助手。我现在可以固定回复这句话。',
-        'time': DateTime.now(),
-        'isUser': false,
-        'model': 'Lappy-Mock-1.0',
-        'tokens': 42,
-      };
-      _chats[_selectedChatIndex]['messages'].add(response);
-      _messages.clear();
-      _messages.addAll(List<Map<String, dynamic>>.from(_chats[_selectedChatIndex]['messages']));
-      _isLoading = false;
-    });
-  }
-
   void _clearMessages() async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => ContentDialog(
-        title: const Text('确认清除'),
-        content: const Text('确定要清除所有消息吗？此操作无法撤销。'),
-        actions: [
-          Button(
-            child: const Text('取消'),
-            onPressed: () => Navigator.pop(context, false),
-          ),
-          FilledButton(
-            child: const Text('确认'),
-            onPressed: () => Navigator.pop(context, true),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true) {
-      setState(() {
-        _messages.clear();
-      });
-    }
+    // 此方法保留但不再使用，功能已移至ChatView
   }
 
   @override
@@ -221,172 +148,25 @@ class _MainScreenState extends State<MainScreen>
   Widget build(BuildContext context) {
     return NavigationView(
       appBar: NavigationAppBar(
-        title: const Text(''),
+        title: const Text('Lappy LLM Client'),
         actions: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // IconButton(
-            //   icon: const Icon(FluentIcons.history),
-            //   onPressed: () {}, // TODO: 实现历史记录
-            // ),
+            IconButton(
+              icon: const Icon(FluentIcons.settings),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  FluentPageRoute(
+                    builder: (context) => const SettingsView(),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
-      pane: NavigationPane(
-        selected: _selectedChatIndex,
-        displayMode: PaneDisplayMode.compact,
-        size: const NavigationPaneSize(
-          openMinWidth: 200,
-          openMaxWidth: 250,
-          compactWidth: 50,
-        ),
-        items: [
-          PaneItemHeader(header: const Text('会话历史')),
-          ..._chats
-              .asMap()
-              .entries
-              .map((entry) => PaneItem(
-                    icon: const Icon(FluentIcons.chat),
-                    title: Text(entry.value['title']),
-                    selectedTileColor: entry.key == _selectedChatIndex
-                        ? ButtonState.all(Colors.green.withAlpha(25))
-                        : null,
-                    body: Column(
-                      children: [
-                        Expanded(
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(8),
-                            itemCount: (entry.value['messages'] as List).length,
-                            itemBuilder: (context, index) {
-                              final message =
-                                  (entry.value['messages'] as List)[index];
-                              return MessageBubble(
-                                text: message['text'],
-                                time: message['time'],
-                                isUser: message['isUser'],
-                                model: message['model'],
-                                tokens: message['tokens'],
-                              );
-                            },
-                          ),
-                        ),
-                        if (_isLoading && entry.key == _selectedChatIndex)
-                          const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: ProgressRing(),
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: FluentTheme.of(context)
-                                    .micaBackgroundColor
-                                    .withOpacity(0.7),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: TextBox(
-                                      controller: _controller,
-                                      placeholder: 'Type your message...',
-                                      onSubmitted: (_) => _sendMessage(),
-                                      style: const TextStyle(fontSize: 16),
-                                      decoration: ButtonState.all(BoxDecoration(
-                                        color: FluentTheme.of(context).micaBackgroundColor.withOpacity(0.7),
-                                        border: null,
-                                        borderRadius: BorderRadius.circular(16),
-                                      )),
-                                      suffix: IconButton(
-                                        icon: const Icon(FluentIcons.send),
-                                        onPressed: _sendMessage,
-                                        style: ButtonStyle(
-                                          padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                                          backgroundColor: WidgetStateProperty.resolveWith((states) {
-                                            if (states.isHovering) {
-                                              return Colors.green.withAlpha(40);
-                                            }
-                                            return Colors.transparent;
-                                          }),
-                                          shape: ButtonState.all(const CircleBorder()),
-                                        ),
-                                      ),
-                                      padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    onTap: () {
-                      setState(() {
-                        _selectedChatIndex = entry.key;
-                        _messages.clear();
-                        _messages.addAll(List<Map<String, dynamic>>.from(
-                            entry.value['messages']));
-                        // 移除旧会话的焦点
-                        if (_selectedChatIndex != entry.key) {
-                          _chats[_selectedChatIndex]['focusNode'].unfocus();
-                        }
-                        // 请求新会话的焦点
-                        entry.value['focusNode'].requestFocus();
-                      });
-                    },
-                  ))
-              ,
-        ],
-        footerItems: [
-          PaneItem(
-            icon: const Icon(FluentIcons.add),
-            title: const Text('新的会话'),
-            body: const SizedBox.shrink(),
-            selectedTileColor: ButtonState.all(Colors.transparent),
-            onTap: () {
-              setState(() {
-                _chats.insert(0, {
-                  'id': DateTime.now().millisecondsSinceEpoch.toString(),
-                  'title': '新会话 ${_chats.length + 1}',
-                  'messages': [],
-                  'focusNode': FocusNode(),
-                });
-                _selectedChatIndex = 0;
-                _messages.clear();
-                _chats[0]['focusNode'].requestFocus();
-              });
-            },
-          ),
-          PaneItem(
-            icon: const Icon(FluentIcons.delete),
-            title: const Text('清空对话'),
-            body: const SizedBox.shrink(),
-            onTap: _clearMessages,
-          ),
-          PaneItem(
-            icon: const Icon(FluentIcons.settings),
-            title: const Text('设置'),
-            body: const SettingsView(),
-            onTap: () {
-              Navigator.push(
-                context,
-                FluentPageRoute(
-                  builder: (context) => const SettingsView(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+      content: const ChatView(),
     );
   }
 }
