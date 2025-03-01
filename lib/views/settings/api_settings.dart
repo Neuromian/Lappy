@@ -1,5 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
+import 'package:lappy/models/api_config.dart';
+import 'package:lappy/models/app_settings.dart';
 
 class ApiSettingsPage extends StatefulWidget {
   const ApiSettingsPage({super.key});
@@ -9,26 +11,40 @@ class ApiSettingsPage extends StatefulWidget {
 }
 
 class _ApiSettingsPageState extends State<ApiSettingsPage> {
-  String selectedProvider = 'OpenAI';
-  final TextEditingController _apiKeyController = TextEditingController();
-  final TextEditingController _endpointController = TextEditingController();
-  final TextEditingController _configNameController = TextEditingController();
-  
-  final List<String> providers = ['OpenAI', '自定义'];
-  final List<Map<String, dynamic>> savedConfigs = [];
+  late ApiConfigManager _apiConfigManager;
+  late TextEditingController _nameController;
+  late TextEditingController _apiKeyController;
+  late TextEditingController _baseUrlController;
+  late TextEditingController _modelNameController;
+  late TextEditingController _configNameController;
+  ApiProvider _selectedProvider = ApiProvider.openAI;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiConfigManager = AppSettings().apiConfigManager;
+    _nameController = TextEditingController();
+    _apiKeyController = TextEditingController();
+    _baseUrlController = TextEditingController();
+    _modelNameController = TextEditingController();
+    _configNameController = TextEditingController();
+  }
 
   @override
   void dispose() {
+    _nameController.dispose();
     _apiKeyController.dispose();
-    _endpointController.dispose();
+    _baseUrlController.dispose();
+    _modelNameController.dispose();
     _configNameController.dispose();
     super.dispose();
   }
 
   void _saveConfig() {
-    if (_configNameController.text.isEmpty ||
+    if (_nameController.text.isEmpty ||
         _apiKeyController.text.isEmpty ||
-        _endpointController.text.isEmpty) {
+        _baseUrlController.text.isEmpty ||
+        _modelNameController.text.isEmpty) {
       showDialog(
         context: context,
         builder: (context) => ContentDialog(
@@ -45,21 +61,24 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
       return;
     }
 
-    setState(() {
-      savedConfigs.add({
-        'name': _configNameController.text,
-        'provider': selectedProvider,
-        'apiKey': _apiKeyController.text,
-        'endpoint': _endpointController.text,
-      });
-    });
+    final newConfig = ApiConfig(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: _nameController.text,
+      provider: _selectedProvider,
+      apiKey: _apiKeyController.text,
+      baseUrl: _baseUrlController.text,
+      modelName: _modelNameController.text,
+    );
 
-    _configNameController.clear();
+    _apiConfigManager.addConfig(newConfig);
+
+    _nameController.clear();
     _apiKeyController.clear();
-    _endpointController.clear();
+    _baseUrlController.clear();
+    _modelNameController.clear();
   }
 
-  void _deleteConfig(int index) {
+  void _deleteConfig(String id) {
     showDialog(
       context: context,
       builder: (context) => ContentDialog(
@@ -73,9 +92,7 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
           FilledButton(
             child: const Text('删除'),
             onPressed: () {
-              setState(() {
-                savedConfigs.removeAt(index);
-              });
+              _apiConfigManager.deleteConfig(id);
               Navigator.pop(context);
             },
           ),
@@ -91,99 +108,137 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
         title: Text('API 配置'),
       ),
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('新建配置', style: TextStyle(fontSize: 18)),
-                const SizedBox(height: 16),
-                InfoLabel(
-                  label: '配置名称',
-                  child: TextBox(
-                    controller: _configNameController,
-                    placeholder: '请输入配置名称',
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 左侧配置列表
+            Expanded(
+              flex: 2,
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('已保存的配置', style: TextStyle(fontSize: 18)),
+                      const SizedBox(height: 16),
+                      ListenableBuilder(
+                        listenable: _apiConfigManager,
+                        builder: (context, _) {
+                          return ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _apiConfigManager.configs.length,
+                            itemBuilder: (context, index) {
+                              final config = _apiConfigManager.configs[index];
+                              return Card(
+                                child: ListTile(
+                                  title: Text(config.name),
+                                  subtitle: Text('${config.provider.displayName} - ${config.modelName}'),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ToggleButton(
+                                        checked: config.isDefault,
+                                        onChanged: (_) => _apiConfigManager.setDefaultConfig(config.id),
+                                        child: const Text('默认'),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        icon: const Icon(FluentIcons.delete),
+                                        onPressed: () => _deleteConfig(config.id),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                InfoLabel(
-                  label: 'API 供应方',
-                  child: ComboBox<String>(
-                    value: selectedProvider,
-                    items: providers
-                        .map((e) => ComboBoxItem<String>(
-                              value: e,
-                              child: Text(e),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          selectedProvider = value;
-                        });
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(height: 8),
-                InfoLabel(
-                  label: 'API Key',
-                  child: TextBox(
-                    controller: _apiKeyController,
-                    placeholder: '请输入 API Key',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                InfoLabel(
-                  label: 'API 端点',
-                  child: TextBox(
-                    controller: _endpointController,
-                    placeholder: selectedProvider == 'OpenAI'
-                        ? 'https://api.openai.com/v1'
-                        : '请输入自定义 API 端点',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: _saveConfig,
-                  child: const Text('保存配置'),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('已保存的配置', style: TextStyle(fontSize: 18)),
-                const SizedBox(height: 16),
-                ...savedConfigs.asMap().entries.map(
-                      (entry) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Card(
-                          child: ListTile(
-                            title: Text(entry.value['name']),
-                            subtitle: Text(entry.value['provider']),
-                            trailing: IconButton(
-                              icon: const Icon(FluentIcons.delete),
-                              onPressed: () => _deleteConfig(entry.key),
-                            ),
-                          ),
+            const SizedBox(width: 16),
+            // 右侧配置编辑
+            Expanded(
+              flex: 3,
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('新建配置', style: TextStyle(fontSize: 18)),
+                      const SizedBox(height: 16),
+                      InfoLabel(
+                        label: 'API 供应方',
+                        child: ComboBox<ApiProvider>(
+                          value: _selectedProvider,
+                          items: ApiProvider.values
+                              .map((e) => ComboBoxItem<ApiProvider>(
+                                    value: e,
+                                    child: Text(e.displayName),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                _selectedProvider = value;
+                                if (value == ApiProvider.openAI) {
+                                  _baseUrlController.text = 'https://api.openai.com/v1';
+                                } else if (value == ApiProvider.chatGLM) {
+                                  _baseUrlController.text = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+                                }
+                              });
+                            }
+                          },
                         ),
                       ),
-                    ),
-                if (savedConfigs.isEmpty)
-                  const Center(
-                    child: Text('暂无保存的配置'),
+                      const SizedBox(height: 8),
+                      InfoLabel(
+                        label: '配置名称',
+                        child: TextBox(
+                          controller: _nameController,
+                          placeholder: '请输入配置名称',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      InfoLabel(
+                        label: 'API Key',
+                        child: TextBox(
+                          controller: _apiKeyController,
+                          placeholder: '请输入 API Key',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      InfoLabel(
+                        label: 'API 端点',
+                        child: TextBox(
+                          controller: _baseUrlController,
+                          placeholder: '请输入自定义 API 端点',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      InfoLabel(
+                        label: '模型名称',
+                        child: TextBox(
+                          controller: _modelNameController,
+                          placeholder: '请输入模型名称',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed: _saveConfig,
+                        child: const Text('保存配置'),
+                      ),
+                    ],
                   ),
-              ],
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ],
     );

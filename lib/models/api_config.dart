@@ -5,6 +5,7 @@ enum ApiProvider {
   openAI('OpenAI'),
   anthropic('Anthropic'),
   gemini('Gemini'),
+  chatGLM('ChatGLM'),
   custom('自定义');
 
   final String displayName;

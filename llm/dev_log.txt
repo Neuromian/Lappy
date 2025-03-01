@@ -64,4 +64,6 @@
   - 更新对话框和信息提示的样式
   - 调整按钮和图标的显示效果
   - settings 页面向fluent ui迁移，参考了 llm\reference\fluent_ui\navigation_view.dart
-  - main 页面想fluent_ui迁移，参考了 llm\reference\fluent_ui\navigation_view.dart
+  - main 页面向fluent_ui迁移，参考了 llm\reference\fluent_ui\navigation_view.dart
+  - settings 和 mian 页面的控件修复，包括发送键，导航栏，气泡效果，paneitem焦点控制等
+  
