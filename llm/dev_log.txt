@@ -63,4 +63,5 @@
   - 统一应用程序的视觉风格
   - 更新对话框和信息提示的样式
   - 调整按钮和图标的显示效果
-  - settings 页面向fluent ui迁移（进行中）
+  - settings 页面向fluent ui迁移，参考了 llm\reference\fluent_ui\navigation_view.dart
+  - main 页面想fluent_ui迁移，参考了 llm\reference\fluent_ui\navigation_view.dart

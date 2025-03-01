@@ -1,4 +1,11 @@
-import 'package:flutter/material.dart' hide Colors, IconButton, CircularProgressIndicator, ButtonStyle;
+import 'package:flutter/material.dart'
+    hide
+        Colors,
+        IconButton,
+        CircularProgressIndicator,
+        ButtonStyle,
+        showDialog,
+        FilledButton;
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:provider/provider.dart';
@@ -22,7 +29,7 @@ void main() async {
     center: true,
     backgroundColor: Colors.transparent,
     skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.normal,
+    titleBarStyle: TitleBarStyle.hidden,
     title: 'Lappy LLM Client',
   );
 
@@ -70,9 +77,19 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> with TrayListener, WindowListener {
+class _MainScreenState extends State<MainScreen>
+    with TrayListener, WindowListener {
   final TextEditingController _controller = TextEditingController();
   final List<Map<String, dynamic>> _messages = [];
+  final List<Map<String, dynamic>> _chats = [
+    {
+      'id': '0',
+      'title': '新会话 1',
+      'messages': [],
+      'focusNode': FocusNode(),
+    }
+  ];
+  int _selectedChatIndex = 0;
   bool _isLoading = false;
 
   @override
@@ -88,13 +105,16 @@ class _MainScreenState extends State<MainScreen> with TrayListener, WindowListen
     trayManager.removeListener(this);
     windowManager.removeListener(this);
     _controller.dispose();
+    for (var chat in _chats) {
+      chat['focusNode'].dispose();
+    }
     super.dispose();
   }
 
   void _init() async {
     await trayManager.setIcon('assets/images/tray_icon.png');
     await trayManager.setToolTip('Lappy LLM Client');
-    
+
     final menu = Menu(items: [
       MenuItem(
         key: 'show_hide',
@@ -103,9 +123,9 @@ class _MainScreenState extends State<MainScreen> with TrayListener, WindowListen
       ),
       MenuItem.separator(),
       MenuItem(
-        key: 'exit_app',
-        label: 'Exit',
-        onClick: (_) => windowManager.close(),
+        key: 'clear_messages',
+        label: 'Clear Messages',
+        onClick: (_) => _clearMessages(),
       ),
     ]);
     await trayManager.setContextMenu(menu);
@@ -151,10 +171,30 @@ class _MainScreenState extends State<MainScreen> with TrayListener, WindowListen
     });
   }
 
-  void _clearMessages() {
-    setState(() {
-      _messages.clear();
-    });
+  void _clearMessages() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => ContentDialog(
+        title: const Text('确认清除'),
+        content: const Text('确定要清除所有消息吗？此操作无法撤销。'),
+        actions: [
+          Button(
+            child: const Text('取消'),
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          FilledButton(
+            child: const Text('确认'),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      setState(() {
+        _messages.clear();
+      });
+    }
   }
 
   @override
@@ -175,15 +215,7 @@ class _MainScreenState extends State<MainScreen> with TrayListener, WindowListen
   Widget build(BuildContext context) {
     return NavigationView(
       appBar: NavigationAppBar(
-        title: const Text('Lappy LLM Client'),
-        leading: Button(
-          child: const Icon(FluentIcons.settings),
-          onPressed: () {
-            Navigator.of(context).push(
-              FluentPageRoute(builder: (context) => const SettingsView()),
-            );
-          },
-        ),
+        title: const Text(''),
         actions: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -191,81 +223,161 @@ class _MainScreenState extends State<MainScreen> with TrayListener, WindowListen
               icon: const Icon(FluentIcons.history),
               onPressed: () {}, // TODO: 实现历史记录
             ),
-            IconButton(
-              icon: const Icon(FluentIcons.clear),
-              onPressed: _clearMessages,
-            ),
           ],
         ),
       ),
-      content: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return MessageBubble(
-                  text: message['text'],
-                  time: message['time'],
-                  isUser: message['isUser'],
-                  model: message['model'],
-                  tokens: message['tokens'],
-                );
-              },
-            ),
-          ),
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: ProgressRing(),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: FluentTheme.of(context).micaBackgroundColor.withOpacity(0.7),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextBox(
-                        controller: _controller,
-                        placeholder: 'Type your message...',
-                        onSubmitted: (_) => _sendMessage(),
-                        style: const TextStyle(fontSize: 16),
-                        decoration: ButtonState.all(BoxDecoration(
-                          border: null,
-                          borderRadius: BorderRadius.circular(16),
-                        )),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: IconButton(
-                        icon: const Icon(FluentIcons.send),
-                        onPressed: _sendMessage,
-                        style: ButtonStyle(
-                          padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                          backgroundColor: WidgetStateProperty.all(Colors.green.withAlpha(25)),
+      pane: NavigationPane(
+        selected: _selectedChatIndex,
+        displayMode: PaneDisplayMode.compact,
+        size: const NavigationPaneSize(
+          openMinWidth: 200,
+          openMaxWidth: 250,
+          compactWidth: 50,
+        ),
+        items: [
+          PaneItemHeader(header: const Text('会话历史')),
+          ..._chats
+              .asMap()
+              .entries
+              .map((entry) => PaneItem(
+                    icon: const Icon(FluentIcons.chat),
+                    title: Text(entry.value['title']),
+                    selectedTileColor: entry.key == _selectedChatIndex
+                        ? ButtonState.all(Colors.green.withAlpha(25))
+                        : null,
+                    body: Column(
+                      children: [
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(8),
+                            itemCount: (entry.value['messages'] as List).length,
+                            itemBuilder: (context, index) {
+                              final message =
+                                  (entry.value['messages'] as List)[index];
+                              return MessageBubble(
+                                text: message['text'],
+                                time: message['time'],
+                                isUser: message['isUser'],
+                                model: message['model'],
+                                tokens: message['tokens'],
+                              );
+                            },
+                          ),
                         ),
-                      ),
+                        if (_isLoading && entry.key == _selectedChatIndex)
+                          const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: ProgressRing(),
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: FluentTheme.of(context)
+                                    .micaBackgroundColor
+                                    .withOpacity(0.7),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextBox(
+                                      controller: _controller,
+                                      placeholder: 'Type your message...',
+                                      onSubmitted: (_) => _sendMessage(),
+                                      style: const TextStyle(fontSize: 16),
+                                      decoration: ButtonState.all(BoxDecoration(
+                                        border: null,
+                                        borderRadius: BorderRadius.circular(16),
+                                      )),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: IconButton(
+                                      icon: const Icon(FluentIcons.send),
+                                      onPressed: _sendMessage,
+                                      style: ButtonStyle(
+                                        padding: WidgetStateProperty.all(
+                                            const EdgeInsets.all(12)),
+                                        backgroundColor:
+                                            WidgetStateProperty.all(
+                                                Colors.green.withAlpha(25)),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                    onTap: () {
+                      setState(() {
+                        _selectedChatIndex = entry.key;
+                        _messages.clear();
+                        _messages.addAll(List<Map<String, dynamic>>.from(
+                            entry.value['messages']));
+                        // 移除旧会话的焦点
+                        if (_selectedChatIndex != entry.key) {
+                          _chats[_selectedChatIndex]['focusNode'].unfocus();
+                        }
+                        // 请求新会话的焦点
+                        entry.value['focusNode'].requestFocus();
+                      });
+                    },
+                  ))
+              ,
+        ],
+        footerItems: [
+          PaneItem(
+            icon: const Icon(FluentIcons.add),
+            title: const Text('新的会话'),
+            body: const SizedBox.shrink(),
+            selectedTileColor: ButtonState.all(Colors.transparent),
+            onTap: () {
+              setState(() {
+                _chats.insert(0, {
+                  'id': DateTime.now().millisecondsSinceEpoch.toString(),
+                  'title': '新会话 ${_chats.length + 1}',
+                  'messages': [],
+                  'focusNode': FocusNode(),
+                });
+                _selectedChatIndex = 0;
+                _messages.clear();
+                _chats[0]['focusNode'].requestFocus();
+              });
+            },
+          ),
+          PaneItem(
+            icon: const Icon(FluentIcons.delete),
+            title: const Text('清空对话'),
+            body: const SizedBox.shrink(),
+            onTap: _clearMessages,
+          ),
+          PaneItem(
+            icon: const Icon(FluentIcons.settings),
+            title: const Text('设置'),
+            body: const SettingsView(),
+            onTap: () {
+              Navigator.push(
+                context,
+                FluentPageRoute(
+                  builder: (context) => const SettingsView(),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ],
       ),
@@ -299,9 +411,9 @@ class MessageBubble extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 400),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: isUser 
-              ? [Colors.blue.withAlpha(76), Colors.blue.withAlpha(127)]
-              : [Colors.grey.withAlpha(76), Colors.grey.withAlpha(127)],
+            colors: isUser
+                ? [Colors.blue.withAlpha(76), Colors.blue.withAlpha(127)]
+                : [Colors.grey.withAlpha(76), Colors.grey.withAlpha(127)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -329,13 +441,13 @@ class MessageBubble extends StatelessWidget {
             const SizedBox(height: 6),
             DefaultTextStyle(
               style: FluentTheme.of(context).typography.caption!.copyWith(
-                color: (isUser ? Colors.blue : Colors.grey).withAlpha(200),
-              ),
+                    color: (isUser ? Colors.blue : Colors.grey).withAlpha(200),
+                  ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(time.toLocal().toString().split('.')[0]),
-                  if (!isUser && model != null) ...[                  
+                  if (!isUser && model != null) ...[
                     const SizedBox(width: 8),
                     Text('Model: $model'),
                     const SizedBox(width: 8),
