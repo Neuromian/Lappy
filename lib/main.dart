@@ -225,10 +225,10 @@ class _MainScreenState extends State<MainScreen>
         actions: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: const Icon(FluentIcons.history),
-              onPressed: () {}, // TODO: 实现历史记录
-            ),
+            // IconButton(
+            //   icon: const Icon(FluentIcons.history),
+            //   onPressed: () {}, // TODO: 实现历史记录
+            // ),
           ],
         ),
       ),
@@ -301,25 +301,25 @@ class _MainScreenState extends State<MainScreen>
                                       onSubmitted: (_) => _sendMessage(),
                                       style: const TextStyle(fontSize: 16),
                                       decoration: ButtonState.all(BoxDecoration(
+                                        color: FluentTheme.of(context).micaBackgroundColor.withOpacity(0.7),
                                         border: null,
                                         borderRadius: BorderRadius.circular(16),
                                       )),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 12),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: IconButton(
-                                      icon: const Icon(FluentIcons.send),
-                                      onPressed: _sendMessage,
-                                      style: ButtonStyle(
-                                        padding: WidgetStateProperty.all(
-                                            const EdgeInsets.all(12)),
-                                        backgroundColor:
-                                            WidgetStateProperty.all(
-                                                Colors.green.withAlpha(25)),
+                                      suffix: IconButton(
+                                        icon: const Icon(FluentIcons.send),
+                                        onPressed: _sendMessage,
+                                        style: ButtonStyle(
+                                          padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
+                                          backgroundColor: WidgetStateProperty.resolveWith((states) {
+                                            if (states.isHovering) {
+                                              return Colors.green.withAlpha(40);
+                                            }
+                                            return Colors.transparent;
+                                          }),
+                                          shape: ButtonState.all(const CircleBorder()),
+                                        ),
                                       ),
+                                      padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
                                     ),
                                   ),
                                 ],
