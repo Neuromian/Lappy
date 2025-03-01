@@ -1,15 +1,21 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Colors, IconButton, CircularProgressIndicator;
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:lappy/models/app_settings.dart';
 import 'package:lappy/views/settings_view.dart';
+import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter_acrylic/flutter_acrylic.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
+  await Window.initialize();
+  await Window.setEffect(
+    effect: WindowEffect.acrylic,
+    color: Colors.transparent,
+  );
 
-  // 设置窗口属性
   const windowOptions = WindowOptions(
     size: Size(800, 600),
     minimumSize: Size(400, 300),
@@ -35,11 +41,21 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => AppSettings(),
-      child: MaterialApp(
+      child: FluentApp(
         title: 'Lappy LLM Client',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-          useMaterial3: true,
+        themeMode: ThemeMode.light,
+        color: Colors.green,
+        darkTheme: FluentThemeData(
+          brightness: Brightness.dark,
+          accentColor: Colors.green,
+          visualDensity: VisualDensity.standard,
+          fontFamily: 'MiSans',
+        ),
+        theme: FluentThemeData(
+          brightness: Brightness.light,
+          accentColor: Colors.green,
+          visualDensity: VisualDensity.standard,
+          fontFamily: 'MiSans',
         ),
         home: const MainScreen(),
       ),
@@ -157,32 +173,32 @@ class _MainScreenState extends State<MainScreen> with TrayListener, WindowListen
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+    return NavigationView(
+      appBar: NavigationAppBar(
         title: const Text('Lappy LLM Client'),
-        leading: IconButton(
-          icon: const Icon(Icons.settings),
+        leading: Button(
+          child: const Icon(FluentIcons.settings),
           onPressed: () {
-            // 打开设置页面
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const SettingsView()),
+              FluentPageRoute(builder: (context) => const SettingsView()),
             );
           },
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () {}, // TODO: 实现历史记录
-          ),
-          IconButton(
-            icon: const Icon(Icons.cleaning_services),
-            onPressed: _clearMessages,
-          ),
-        ],
+        actions: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(FluentIcons.history),
+              onPressed: () {}, // TODO: 实现历史记录
+            ),
+            IconButton(
+              icon: const Icon(FluentIcons.clear),
+              onPressed: _clearMessages,
+            ),
+          ],
+        ),
       ),
-      body: Column(
+      content: Column(
         children: [
           Expanded(
             child: ListView.builder(
@@ -203,25 +219,22 @@ class _MainScreenState extends State<MainScreen> with TrayListener, WindowListen
           if (_isLoading)
             const Padding(
               padding: EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(),
+              child: ProgressRing(),
             ),
           Padding(
             padding: const EdgeInsets.all(8),
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
+                  child: TextBox(
                     controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: 'Type your message...',
-                      border: OutlineInputBorder(),
-                    ),
+                    placeholder: 'Type your message...',
                     onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.send),
+                  icon: const Icon(FluentIcons.send),
                   onPressed: _sendMessage,
                 ),
               ],
@@ -257,7 +270,7 @@ class MessageBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isUser ? Colors.blue.shade100 : Colors.grey.shade200,
+          color: isUser ? Colors.blue.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -270,18 +283,18 @@ class MessageBubble extends StatelessWidget {
               children: [
                 Text(
                   time.toLocal().toString().split('.')[0],
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: FluentTheme.of(context).typography.caption,
                 ),
                 if (!isUser && model != null) ...[                  
                   const SizedBox(width: 8),
                   Text(
                     'Model: $model',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: FluentTheme.of(context).typography.caption,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'Tokens: $tokens',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: FluentTheme.of(context).typography.caption,
                   ),
                 ],
               ],

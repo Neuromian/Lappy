@@ -1,6 +1,6 @@
 # 开发进度和日志记录
 
-## 2025-02-28
+## 2025-02-29
 - 创建Flutter项目：lappy
 - 配置中国镜像源：flutter_env.bat
 - 创建开发进度文档和LLM log文档
@@ -24,8 +24,6 @@
   - 删除旧的development_progress.txt和llm_log.txt文件
   - 修复pubspec.yaml文件中的字体目录配置
   - 移除pubspec.yaml文件中的system_tray: ^2.0.3，并使用tray_manager: ^0.3.2替代
-
-## 2025-02-29
 - 调整窗口配置：
   - 将标题栏样式从隐藏(TitleBarStyle.hidden)改为正常显示(TitleBarStyle.normal)
   - 启用任务栏显示(skipTaskbar: false)
@@ -56,3 +54,11 @@
   - 统一处理不同操作系统的路径分隔符
   - 修复文件选择器在不同平台的兼容性问题
   - 优化设置页面的图标和布局
+
+## 2025-03-02
+- 完成FluentUI迁移：
+  - 将所有Material组件替换为FluentUI组件
+  - 优化设置页面的TabView布局
+  - 统一应用程序的视觉风格
+  - 更新对话框和信息提示的样式
+  - 调整按钮和图标的显示效果

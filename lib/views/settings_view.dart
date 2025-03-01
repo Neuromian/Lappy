@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:lappy/models/app_settings.dart';
 import 'package:lappy/views/settings/api_settings_view.dart';
@@ -13,13 +13,12 @@ class SettingsView extends StatefulWidget {
   State<SettingsView> createState() => _SettingsViewState();
 }
 
-class _SettingsViewState extends State<SettingsView> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  
+class _SettingsViewState extends State<SettingsView> {
+  int _currentIndex = 0;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     
     // 确保设置已初始化
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -29,66 +28,75 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
       }
     });
   }
-  
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    return Scaffold(
-      appBar: AppBar(
+    return NavigationView(
+      appBar: NavigationAppBar(
         title: const Text('设置'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'API配置', icon: Icon(Icons.api)),
-            Tab(text: '快捷键', icon: Icon(Icons.keyboard)),
-            Tab(text: '数据管理', icon: Icon(Icons.storage)),
-          ],
+        leading: IconButton(
+          icon: const Icon(FluentIcons.back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        actions: Padding(
+          padding: const EdgeInsets.only(right: 8.0),
+          child: IconButton(
+            icon: const Icon(FluentIcons.reset),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => ContentDialog(
+                  title: const Text('重置设置'),
+                  content: const Text('确定要重置所有设置吗？这将删除所有API配置、快捷键设置和数据管理设置。'),
+                  actions: [
+                    Button(
+                      child: const Text('取消'),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    FilledButton(
+                      child: const Text('确定'),
+                      onPressed: () {
+                        Provider.of<AppSettings>(context, listen: false).resetAllSettings();
+                        Navigator.of(context).pop();
+                        displayInfoBar(
+                          context,
+                          duration: const Duration(seconds: 2),
+                          builder: (context, close) => InfoBar(
+                            title: const Text('已重置所有设置'),
+                            severity: InfoBarSeverity.info,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          ApiSettingsView(),
-          ShortcutSettingsView(),
-          DataSettingsView(),
+      content: TabView(
+        currentIndex: _currentIndex,
+        onChanged: (index) => setState(() => _currentIndex = index),
+        tabs: [
+          Tab(
+            text: const Text('API配置'),
+            icon: const Icon(FluentIcons.code),
+            body: const ApiSettingsView(),
+          ),
+          Tab(
+            text: const Text('快捷键'),
+            icon: const Icon(FluentIcons.keyboard_classic),
+            body: const ShortcutSettingsView(),
+          ),
+          Tab(
+            text: const Text('数据管理'),
+            icon: Icon(FluentIcons.database),
+            body: const DataSettingsView(),
+          ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // 重置所有设置
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('重置设置'),
-              content: const Text('确定要重置所有设置吗？这将删除所有API配置、快捷键设置和数据管理设置。'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('取消'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Provider.of<AppSettings>(context, listen: false).resetAllSettings();
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('已重置所有设置')),
-                    );
-                  },
-                  child: const Text('确定'),
-                ),
-              ],
-            ),
-          );
-        },
-        tooltip: '重置所有设置',
-        child: const Icon(Icons.restore),
+        tabWidthBehavior: TabWidthBehavior.equal,
+        closeButtonVisibility: CloseButtonVisibilityMode.never,
       ),
     );
   }
