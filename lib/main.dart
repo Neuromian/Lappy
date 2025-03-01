@@ -146,27 +146,33 @@ class _MainScreenState extends State<MainScreen>
     if (text.isEmpty || _isLoading) return;
 
     setState(() {
-      _messages.add({
+      _chats[_selectedChatIndex]['messages'].add({
         'text': text,
         'time': DateTime.now(),
         'isUser': true,
         'model': null,
         'tokens': 0,
       });
+      _messages.clear();
+      _messages.addAll(List<Map<String, dynamic>>.from(_chats[_selectedChatIndex]['messages']));
       _controller.clear();
       _isLoading = true;
     });
 
-    // TODO: 实现LLM API调用
+    // 模拟API调用延迟
     await Future.delayed(const Duration(seconds: 1));
+
     setState(() {
-      _messages.add({
-        'text': '这是一个模拟的LLM响应',
+      final response = {
+        'text': '你好！我是Lappy，一个模拟的AI助手。我现在可以固定回复这句话。',
         'time': DateTime.now(),
         'isUser': false,
-        'model': 'GPT-3.5',
-        'tokens': 10,
-      });
+        'model': 'Lappy-Mock-1.0',
+        'tokens': 42,
+      };
+      _chats[_selectedChatIndex]['messages'].add(response);
+      _messages.clear();
+      _messages.addAll(List<Map<String, dynamic>>.from(_chats[_selectedChatIndex]['messages']));
       _isLoading = false;
     });
   }
@@ -412,8 +418,8 @@ class MessageBubble extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isUser
-                ? [Colors.blue.withAlpha(76), Colors.blue.withAlpha(127)]
-                : [Colors.grey.withAlpha(76), Colors.grey.withAlpha(127)],
+                ? [Colors.blue.withAlpha(25), Colors.blue.withAlpha(50)]
+                : [Colors.grey.withAlpha(25), Colors.grey.withAlpha(50)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -425,7 +431,7 @@ class MessageBubble extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: (isUser ? Colors.blue : Colors.grey).withAlpha(25),
+              color: (isUser ? Colors.blue : Colors.grey).withAlpha(15),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
