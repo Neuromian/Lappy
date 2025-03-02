@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui';
 import 'package:get/get.dart';
 import 'package:lappy/controllers/chat_controller.dart';
 import 'package:lappy/services/chat_service.dart';
@@ -252,11 +253,7 @@ class _ChatViewState extends State<ChatView> {
                           },
                         ),
                       ),
-                      if (_chatController.isLoading && currentSession.messages.isNotEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: ProgressRing(),
-                        ),
+
                       Padding(
                         padding: const EdgeInsets.all(8),
                         child: ClipRRect(
@@ -329,11 +326,29 @@ class MessageBubble extends StatelessWidget {
     required this.message,
   });
 
+  Widget _buildLoadingEffect() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Container(
+          color: Colors.white.withOpacity(0.1),
+          child: const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: ProgressRing(),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Align(
       alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
+      child: !message.isUser && message.content.isEmpty
+          ? _buildLoadingEffect()
+          : Container(
         margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         constraints: const BoxConstraints(maxWidth: 400),
