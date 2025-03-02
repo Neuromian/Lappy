@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:lappy/controllers/chat_controller.dart';
 import 'package:lappy/services/chat_service.dart';
 import 'package:lappy/models/app_settings.dart';
+import 'package:lappy/views/settings_view.dart';
 
 /// 聊天视图组件
 class ChatView extends StatefulWidget {
@@ -213,6 +214,17 @@ class _ChatViewState extends State<ChatView> {
             title: const Text('清空对话'),
             body: const SizedBox.shrink(),
             onTap: _clearCurrentSessionMessages,
+          ),
+          PaneItem(
+            icon: const Icon(FluentIcons.settings),
+            title: const Text('设置'),
+            body: const SizedBox.shrink(),
+            onTap: () => Navigator.push(
+              context,
+              FluentPageRoute(
+                builder: (context) => const SettingsView(),
+              ),
+            ),
           ),
         ],
       );

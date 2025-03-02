@@ -14,6 +14,7 @@ import 'package:lappy/views/settings_view.dart';
 import 'package:lappy/views/chat_view.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
+import 'package:get/get.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +40,11 @@ void main() async {
     await windowManager.focus();
   });
 
+  // 初始化 AppSettings 并注入到 GetX
+  final appSettings = AppSettings();
+  Get.put(appSettings);
+  await appSettings.init();
+
   runApp(const MyApp());
 }
 
@@ -47,26 +53,23 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => AppSettings(),
-      child: FluentApp(
-        title: 'Lappy LLM Client',
-        themeMode: ThemeMode.light,
-        color: Colors.green,
-        darkTheme: FluentThemeData(
-          brightness: Brightness.dark,
-          accentColor: Colors.green,
-          visualDensity: VisualDensity.standard,
-          fontFamily: 'MiSans',
-        ),
-        theme: FluentThemeData(
-          brightness: Brightness.light,
-          accentColor: Colors.green,
-          visualDensity: VisualDensity.standard,
-          fontFamily: 'MiSans',
-        ),
-        home: const MainScreen(),
+    return FluentApp(
+      title: 'Lappy LLM Client',
+      themeMode: ThemeMode.light,
+      color: Colors.green,
+      darkTheme: FluentThemeData(
+        brightness: Brightness.dark,
+        accentColor: Colors.green,
+        visualDensity: VisualDensity.standard,
+        fontFamily: 'MiSans',
       ),
+      theme: FluentThemeData(
+        brightness: Brightness.light,
+        accentColor: Colors.green,
+        visualDensity: VisualDensity.standard,
+        fontFamily: 'MiSans',
+      ),
+      home: const MainScreen(),
     );
   }
 }
@@ -147,24 +150,8 @@ class _MainScreenState extends State<MainScreen>
   @override
   Widget build(BuildContext context) {
     return NavigationView(
-      appBar: NavigationAppBar(
-        title: const Text('Lappy LLM Client'),
-        actions: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(FluentIcons.settings),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  FluentPageRoute(
-                    builder: (context) => const SettingsView(),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
+      appBar: const NavigationAppBar(
+        title: Text('Lappy LLM Client'),
       ),
       content: const ChatView(),
     );

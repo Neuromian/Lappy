@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// API供应商枚举
 enum ApiProvider {
@@ -84,15 +87,15 @@ class ApiConfig {
 }
 
 /// API配置管理器
-class ApiConfigManager extends ChangeNotifier {
-  List<ApiConfig> _configs = [];
-  ApiConfig? _selectedConfig;
+class ApiConfigManager extends GetxController {
+  final _configs = <ApiConfig>[].obs;
+  final _selectedConfig = Rxn<ApiConfig>();
 
   // 获取所有配置
-  List<ApiConfig> get configs => List.unmodifiable(_configs);
+  List<ApiConfig> get configs => _configs;
   
   // 获取当前选中的配置
-  ApiConfig? get selectedConfig => _selectedConfig;
+  ApiConfig? get selectedConfig => _selectedConfig.value;
 
   // 添加配置
   void addConfig(ApiConfig config) {
@@ -103,17 +106,15 @@ class ApiConfigManager extends ChangeNotifier {
     
     // 如果设置为默认，取消其他默认
     if (config.isDefault) {
-      _configs = _configs.map((c) => c.copyWith(isDefault: false)).toList();
+      _configs.value = _configs.map((c) => c.copyWith(isDefault: false)).toList();
     }
     
     _configs.add(config);
     
     // 如果是默认配置或没有选中配置，选中它
-    if (config.isDefault || _selectedConfig == null) {
-      _selectedConfig = config;
+    if (config.isDefault || _selectedConfig.value == null) {
+      _selectedConfig.value = config;
     }
-    
-    notifyListeners();
   }
 
   // 更新配置
@@ -122,17 +123,15 @@ class ApiConfigManager extends ChangeNotifier {
     if (index != -1) {
       // 如果设置为默认，取消其他默认
       if (config.isDefault) {
-        _configs = _configs.map((c) => c.id != config.id ? c.copyWith(isDefault: false) : c).toList();
+        _configs.value = _configs.map((c) => c.id != config.id ? c.copyWith(isDefault: false) : c).toList();
       }
       
       _configs[index] = config;
       
       // 如果更新的是当前选中的配置，更新选中配置
-      if (_selectedConfig?.id == config.id) {
-        _selectedConfig = config;
+      if (_selectedConfig.value?.id == config.id) {
+        _selectedConfig.value = config;
       }
-      
-      notifyListeners();
     }
   }
 
@@ -142,29 +141,26 @@ class ApiConfigManager extends ChangeNotifier {
     _configs.removeWhere((c) => c.id == id);
     
     // 如果删除的是当前选中的配置，重新选择
-    if (_selectedConfig?.id == id) {
-      _selectedConfig = _configs.isNotEmpty ? _configs.first : null;
+    if (_selectedConfig.value?.id == id) {
+      _selectedConfig.value = _configs.isNotEmpty ? _configs.first : null;
     }
     
     // 如果删除的是默认配置，设置新的默认配置
     if (wasDefault && _configs.isNotEmpty) {
       _configs[0] = _configs[0].copyWith(isDefault: true);
     }
-    
-    notifyListeners();
   }
 
   // 选择配置
   void selectConfig(String id) {
     final config = _configs.firstWhere((c) => c.id == id, orElse: () => _configs.first);
-    _selectedConfig = config;
-    notifyListeners();
+    _selectedConfig.value = config;
   }
 
   // 设置默认配置
   void setDefaultConfig(String id) {
     // 将所有配置的isDefault设为false
-    _configs = _configs.map((c) => c.copyWith(isDefault: false)).toList();
+    _configs.value = _configs.map((c) => c.copyWith(isDefault: false)).toList();
     
     // 将指定ID的配置isDefault设为true
     final index = _configs.indexWhere((c) => c.id == id);
@@ -172,28 +168,29 @@ class ApiConfigManager extends ChangeNotifier {
       _configs[index] = _configs[index].copyWith(isDefault: true);
       
       // 同时将其设为当前选中的配置
-      _selectedConfig = _configs[index];
-      
-      notifyListeners();
+      _selectedConfig.value = _configs[index];
     }
   }
 
   // 从JSON加载配置
-  void loadFromJson(List<dynamic> jsonList) {
-    _configs = jsonList.map((json) => ApiConfig.fromJson(json)).toList();
-    
-    // 选择默认配置或第一个配置
-    _selectedConfig = _configs.firstWhere(
-      (c) => c.isDefault,
-      orElse: () {
-        if (_configs.isEmpty) {
-          throw StateError('No API configs found');
-        }
-        return _configs.first;
-      },
-    );
-    
-    notifyListeners();
+  void loadFromJson(List<dynamic> json) {
+    _configs.value = json.map((item) => ApiConfig.fromJson(item)).toList();
+    // 设置默认选中配置
+    _selectedConfig.value = _configs.firstWhereOrNull((c) => c.isDefault) ?? _configs.firstOrNull;
+  }
+
+  // 保存配置到本地
+  Future<void> saveToPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final configsJson = _configs.map((c) => c.toJson()).toList();
+    await prefs.setString('api_configs', jsonEncode(configsJson));
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    // 监听配置变化并保存
+    ever(_configs, (_) => saveToPrefs());
   }
 
   // 转换为JSON

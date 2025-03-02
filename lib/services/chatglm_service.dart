@@ -90,17 +90,14 @@ class ChatGLMService {
       );
 
       if (response.statusCode == 200 && response.data != null) {
-        final StringBuffer buffer = StringBuffer();
         final controller = StreamController<String>();
-        late final StreamSubscription<String> subscription;
-        String pendingContent = '';
+        final StringBuffer buffer = StringBuffer();
 
-        subscription = response.data!.stream
+        response.data!.stream
             .transform(StreamTransformer<Uint8List, String>.fromHandlers(
               handleData: (data, sink) {
                 try {
                   final decoded = utf8.decode(data, allowMalformed: true);
-                  // print('收到原始数据: $decoded');
                   sink.add(decoded);
                 } catch (e) {
                   print('解码错误: $e');
@@ -110,7 +107,6 @@ class ChatGLMService {
             ))
             .listen(
               (chunk) {
-                // print('处理数据块: $chunk');
                 buffer.write(chunk);
                 String currentBuffer = buffer.toString();
                 final lines = currentBuffer.split('\n');
@@ -124,15 +120,8 @@ class ChatGLMService {
                     if (line.trim().isEmpty) continue;
                     if (line.startsWith('data: ')) {
                       final jsonStr = line.substring(6).trim();
-                      // print('解析JSON数据: $jsonStr');
                       if (jsonStr == '[DONE]') {
-                        if (pendingContent.isNotEmpty) {
-                          print('发送最后的pendingContent: $pendingContent');
-                          controller.add(pendingContent);
-                          pendingContent = '';
-                        }
                         controller.close();
-                        subscription.cancel();
                         return;
                       }
 
@@ -141,13 +130,7 @@ class ChatGLMService {
                         final delta = data['choices'][0]['delta'];
                         final content = (delta['content'] ?? '').toString();
                         if (content.isNotEmpty) {
-                          pendingContent += content;
-                          print('累积的pendingContent: $pendingContent');
-                          if (pendingContent.length >= 4 || i == lines.length - 2) {
-                            print('发送pendingContent: $pendingContent');
-                            controller.add(pendingContent);
-                            pendingContent = '';
-                          }
+                          controller.add(content);
                         }
                       } catch (e) {
                         print('JSON解析错误: $e\nJSON数据: $jsonStr');
@@ -161,15 +144,11 @@ class ChatGLMService {
                 controller.addError(error);
               },
               onDone: () {
-                if (pendingContent.isNotEmpty) {
-                  controller.add(pendingContent);
-                }
                 controller.close();
               },
             );
 
-        return controller.stream
-            .debounceTime(const Duration(milliseconds: 50));
+        return controller.stream;
       } else {
         throw Exception('API调用失败: ${response.statusCode}');
       }

@@ -132,7 +132,7 @@ class ChatController extends GetxController {
     if (content.trim().isEmpty || _isLoading.value || currentSession == null) return;
 
     // 获取API配置
-    final apiConfigManager = AppSettings().apiConfigManager;
+    final apiConfigManager = AppSettings.to.apiConfigManager;
     final apiConfig = apiConfigManager.selectedConfig;
     
     if (apiConfig == null) {
@@ -198,7 +198,7 @@ class ChatController extends GetxController {
     if (content.trim().isEmpty || _isLoading.value || currentSession == null) return;
 
     // 获取API配置
-    final apiConfigManager = AppSettings().apiConfigManager;
+    final apiConfigManager = AppSettings.to.apiConfigManager;
     final apiConfig = apiConfigManager.selectedConfig;
     
     if (apiConfig == null) {
@@ -228,7 +228,7 @@ class ChatController extends GetxController {
     
     // 创建一个空的AI响应消息并立即添加到会话中
     final aiMessageId = DateTime.now().millisecondsSinceEpoch.toString();
-    final initialAiMessage = ChatMessage(
+    final aiMessage = ChatMessage(
       id: aiMessageId,
       content: '',
       time: DateTime.now(),
@@ -236,16 +236,12 @@ class ChatController extends GetxController {
       model: apiConfig.modelName,
       tokens: 0,
     );
-    currentSession!.addMessage(initialAiMessage);
+    currentSession!.addMessage(aiMessage);
     _sessions.refresh();
     await _saveSessions();
 
     // 设置加载状态
     _isLoading.value = true;
-
-    String accumulatedContent = '';
-    int estimatedTokens = 0;
-    int? messageIndex;
 
     try {
       // 创建聊天服务
@@ -258,45 +254,37 @@ class ChatController extends GetxController {
       );
       
       // 监听流式响应
+      String accumulatedContent = '';
+      int estimatedTokens = 0;
+      
       await for (final chunk in responseStream) {
         if (chunk.trim().isNotEmpty) {
-          // 更新累积内容
+          // 直接追加新内容到消息末尾
           accumulatedContent += chunk;
           estimatedTokens = (accumulatedContent.length / 4).round();
           
-          // 查找消息索引（仅在第一次时查找）
-          messageIndex ??= currentSession!.messages.indexWhere((m) => m.id == aiMessageId);
-          
+          // 获取当前消息的索引
+          final messageIndex = currentSession!.messages.indexWhere((m) => m.id == aiMessageId);
           if (messageIndex != -1) {
-            // 使用不可变的方式更新消息
-            final updatedMessage = currentSession!.messages[messageIndex!].copyWith(
-              content: accumulatedContent,
-              tokens: estimatedTokens,
-            );
-            
-            // 原子性地更新消息
-            currentSession!.messages[messageIndex!] = updatedMessage;
+            // 直接更新消息内容和token计数
+            currentSession!.messages[messageIndex].content += chunk;
+            currentSession!.messages[messageIndex].tokens = estimatedTokens;
+            // 通知GetX更新UI
             _sessions.refresh();
-            
-            // 定期保存会话，避免过于频繁的IO操作
-            if (estimatedTokens % 100 == 0) {
-              await _saveSessions();
-            }
+          }
+          
+          // 定期保存会话，避免过于频繁的IO操作
+          if (estimatedTokens % 100 == 0) {
+            await _saveSessions();
           }
         }
       }
     } catch (e) {
       // 更新AI消息为错误消息
-      final index = currentSession!.messages.indexWhere((m) => m.id == aiMessageId);
-      if (index != -1) {
-        currentSession!.messages[index] = ChatMessage(
-          id: aiMessageId,
-          content: '发送消息失败: $e',
-          time: DateTime.now(),
-          isUser: false,
-          model: apiConfig.modelName,
-          tokens: 0,
-        );
+      final errorMessage = aiMessage.copyWith(content: '发送消息失败: $e');
+      final messageIndex = currentSession!.messages.indexWhere((m) => m.id == aiMessageId);
+      if (messageIndex != -1) {
+        currentSession!.messages[messageIndex] = errorMessage;
         _sessions.refresh();
       }
     } finally {

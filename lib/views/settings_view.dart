@@ -1,5 +1,4 @@
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:provider/provider.dart';
 import 'package:lappy/models/app_settings.dart';
 import 'package:lappy/views/settings/api_settings.dart';
 import 'package:lappy/views/settings/shortcut_settings.dart';
@@ -21,12 +20,10 @@ class _SettingsViewState extends State<SettingsView> {
     super.initState();
     
     // 确保设置已初始化
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final settings = Provider.of<AppSettings>(context, listen: false);
-      if (!settings.initialized) {
-        settings.init();
-      }
-    });
+    final settings = AppSettings.to;
+    if (!settings.initialized) {
+      settings.init();
+    }
   }
 
   @override
@@ -56,7 +53,7 @@ class _SettingsViewState extends State<SettingsView> {
                     FilledButton(
                       child: const Text('确定'),
                       onPressed: () {
-                        Provider.of<AppSettings>(context, listen: false).resetAllSettings();
+                        AppSettings.to.resetAllSettings();
                         Navigator.of(context).pop();
                         displayInfoBar(
                           context,

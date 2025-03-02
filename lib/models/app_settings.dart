@@ -1,29 +1,28 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:get/get.dart';
 import 'package:lappy/models/api_config.dart';
 import 'package:lappy/models/shortcut_config.dart';
 import 'package:lappy/models/data_config.dart';
 
 /// 应用设置管理器
-class AppSettings extends ChangeNotifier {
+class AppSettings extends GetxController {
   // 单例模式
-  static final AppSettings _instance = AppSettings._internal();
-  factory AppSettings() => _instance;
-  AppSettings._internal();
-
+  static AppSettings get to => Get.find();
+  
   // 子设置管理器
-  final ApiConfigManager apiConfigManager = ApiConfigManager();
-  final ShortcutConfigManager shortcutConfigManager = ShortcutConfigManager();
-  final DataManager dataManager = DataManager();
+  final apiConfigManager = ApiConfigManager();
+  final shortcutConfigManager = ShortcutConfigManager();
+  final dataManager = DataManager();
 
   // 是否已初始化
-  bool _initialized = false;
-  bool get initialized => _initialized;
+  final _initialized = false.obs;
+  bool get initialized => _initialized.value;
 
   // 初始化设置
   Future<void> init() async {
-    if (_initialized) return;
+    if (_initialized.value) return;
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -54,8 +53,8 @@ class AppSettings extends ChangeNotifier {
       shortcutConfigManager.addListener(_saveSettings);
       dataManager.addListener(_saveSettings);
       
-      _initialized = true;
-      notifyListeners();
+      _initialized.value = true;
+      update();
     } catch (e) {
       debugPrint('初始化设置失败: $e');
     }
@@ -78,7 +77,7 @@ class AppSettings extends ChangeNotifier {
       final dataConfigJson = jsonEncode(dataManager.toJson());
       await prefs.setString('data_config', dataConfigJson);
       
-      notifyListeners();
+      update();
     } catch (e) {
       debugPrint('保存设置失败: $e');
     }
@@ -99,18 +98,9 @@ class AppSettings extends ChangeNotifier {
       shortcutConfigManager.updateConfig(ShortcutConfig());
       await dataManager.resetToDefault();
       
-      notifyListeners();
+      update();
     } catch (e) {
       debugPrint('重置设置失败: $e');
     }
-  }
-
-  @override
-  void dispose() {
-    // 移除监听器
-    apiConfigManager.removeListener(_saveSettings);
-    shortcutConfigManager.removeListener(_saveSettings);
-    dataManager.removeListener(_saveSettings);
-    super.dispose();
   }
 }

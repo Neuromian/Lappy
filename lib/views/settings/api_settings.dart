@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
 import 'package:lappy/models/api_config.dart';
 import 'package:lappy/models/app_settings.dart';
 
@@ -16,18 +17,17 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
   late TextEditingController _apiKeyController;
   late TextEditingController _baseUrlController;
   late TextEditingController _modelNameController;
-  late TextEditingController _configNameController;
   ApiProvider _selectedProvider = ApiProvider.openAI;
+  ApiConfig? _editingConfig;
 
   @override
   void initState() {
     super.initState();
-    _apiConfigManager = AppSettings().apiConfigManager;
+    _apiConfigManager = AppSettings.to.apiConfigManager;
     _nameController = TextEditingController();
     _apiKeyController = TextEditingController();
     _baseUrlController = TextEditingController();
     _modelNameController = TextEditingController();
-    _configNameController = TextEditingController();
   }
 
   @override
@@ -36,8 +36,27 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
     _apiKeyController.dispose();
     _baseUrlController.dispose();
     _modelNameController.dispose();
-    _configNameController.dispose();
     super.dispose();
+  }
+
+  void _clearForm() {
+    _editingConfig = null;
+    _nameController.clear();
+    _apiKeyController.clear();
+    _baseUrlController.clear();
+    _modelNameController.clear();
+    _selectedProvider = ApiProvider.openAI;
+    setState(() {});
+  }
+
+  void _loadConfigForEdit(ApiConfig config) {
+    _editingConfig = config;
+    _nameController.text = config.name;
+    _apiKeyController.text = config.apiKey;
+    _baseUrlController.text = config.baseUrl;
+    _modelNameController.text = config.modelName;
+    _selectedProvider = config.provider;
+    setState(() {});
   }
 
   void _saveConfig() {
@@ -61,21 +80,23 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
       return;
     }
 
-    final newConfig = ApiConfig(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+    final config = ApiConfig(
+      id: _editingConfig?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: _nameController.text,
       provider: _selectedProvider,
       apiKey: _apiKeyController.text,
       baseUrl: _baseUrlController.text,
       modelName: _modelNameController.text,
+      isDefault: _editingConfig?.isDefault ?? false,
     );
 
-    _apiConfigManager.addConfig(newConfig);
+    if (_editingConfig != null) {
+      _apiConfigManager.updateConfig(config);
+    } else {
+      _apiConfigManager.addConfig(config);
+    }
 
-    _nameController.clear();
-    _apiKeyController.clear();
-    _baseUrlController.clear();
-    _modelNameController.clear();
+    _clearForm();
   }
 
   void _deleteConfig(String id) {
@@ -103,144 +124,145 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldPage.scrollable(
+    return ScaffoldPage(
       header: const PageHeader(
-        title: Text('API 配置'),
+        title: Text('API配置'),
       ),
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 左侧配置列表
-            Expanded(
-              flex: 2,
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('已保存的配置', style: TextStyle(fontSize: 18)),
-                      const SizedBox(height: 16),
-                      ListenableBuilder(
-                        listenable: _apiConfigManager,
-                        builder: (context, _) {
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: _apiConfigManager.configs.length,
-                            itemBuilder: (context, index) {
-                              final config = _apiConfigManager.configs[index];
-                              return Card(
-                                child: ListTile(
-                                  title: Text(config.name),
-                                  subtitle: Text('${config.provider.displayName} - ${config.modelName}'),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      ToggleButton(
-                                        checked: config.isDefault,
-                                        onChanged: (_) => _apiConfigManager.setDefaultConfig(config.id),
-                                        child: const Text('默认'),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(FluentIcons.delete),
-                                        onPressed: () => _deleteConfig(config.id),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          );
+      content: Row(
+        children: [
+          // 左侧配置列表
+          Expanded(
+            flex: 1,
+            child: Card(
+              child: Obx(() {
+                final configs = _apiConfigManager.configs;
+                return ListView.builder(
+                  itemCount: configs.length,
+                  itemBuilder: (context, index) {
+                    final config = configs[index];
+                    return ListTile(
+                      title: Text(config.name),
+                      subtitle: Text(config.provider.displayName),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (config.isDefault)
+                            const Padding(
+                              padding: EdgeInsets.only(right: 8.0),
+                              child: Icon(FluentIcons.check_mark, size: 16),
+                            ),
+                          IconButton(
+                            icon: const Icon(FluentIcons.edit),
+                            onPressed: () => _loadConfigForEdit(config),
+                          ),
+                          IconButton(
+                            icon: const Icon(FluentIcons.delete),
+                            onPressed: () => _deleteConfig(config.id),
+                          ),
+                        ],
+                      ),
+                      onPressed: () => _loadConfigForEdit(config),
+                    );
+                  },
+                );
+              }),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // 右侧表单
+          Expanded(
+            flex: 2,
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _editingConfig == null ? '新建配置' : '编辑配置',
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                    const SizedBox(height: 16),
+                    InfoLabel(
+                      label: '配置名称',
+                      child: TextBox(
+                        controller: _nameController,
+                        placeholder: '请输入配置名称',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    InfoLabel(
+                      label: 'API提供商',
+                      child: ComboBox<ApiProvider>(
+                        value: _selectedProvider,
+                        items: ApiProvider.values
+                            .map((e) => ComboBoxItem<ApiProvider>(
+                                  value: e,
+                                  child: Text(e.displayName),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _selectedProvider = value;
+                              // 如果选择了 ChatGLM，自动填入默认的基础 URL
+                              if (value == ApiProvider.chatGLM) {
+                                _baseUrlController.text = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+                              }
+                            });
+                          }
                         },
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 8),
+                    InfoLabel(
+                      label: 'API密钥',
+                      child: TextBox(
+                        controller: _apiKeyController,
+                        placeholder: '请输入API密钥',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    InfoLabel(
+                      label: '基础URL',
+                      child: TextBox(
+                        controller: _baseUrlController,
+                        placeholder: '请输入基础URL',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    InfoLabel(
+                      label: '模型名称',
+                      child: TextBox(
+                        controller: _modelNameController,
+                        placeholder: '请输入模型名称',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (_editingConfig != null)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: Button(
+                              child: const Text('取消'),
+                              onPressed: _clearForm,
+                            ),
+                          ),
+                        FilledButton(
+                          child: Text(_editingConfig == null ? '添加' : '保存'),
+                          onPressed: _saveConfig,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(width: 16),
-            // 右侧配置编辑
-            Expanded(
-              flex: 3,
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('新建配置', style: TextStyle(fontSize: 18)),
-                      const SizedBox(height: 16),
-                      InfoLabel(
-                        label: 'API 供应方',
-                        child: ComboBox<ApiProvider>(
-                          value: _selectedProvider,
-                          items: ApiProvider.values
-                              .map((e) => ComboBoxItem<ApiProvider>(
-                                    value: e,
-                                    child: Text(e.displayName),
-                                  ))
-                              .toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() {
-                                _selectedProvider = value;
-                                if (value == ApiProvider.openAI) {
-                                  _baseUrlController.text = 'https://api.openai.com/v1';
-                                } else if (value == ApiProvider.chatGLM) {
-                                  _baseUrlController.text = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-                                }
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      InfoLabel(
-                        label: '配置名称',
-                        child: TextBox(
-                          controller: _nameController,
-                          placeholder: '请输入配置名称',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      InfoLabel(
-                        label: 'API Key',
-                        child: TextBox(
-                          controller: _apiKeyController,
-                          placeholder: '请输入 API Key',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      InfoLabel(
-                        label: 'API 端点',
-                        child: TextBox(
-                          controller: _baseUrlController,
-                          placeholder: '请输入自定义 API 端点',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      InfoLabel(
-                        label: '模型名称',
-                        child: TextBox(
-                          controller: _modelNameController,
-                          placeholder: '请输入模型名称',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: _saveConfig,
-                        child: const Text('保存配置'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

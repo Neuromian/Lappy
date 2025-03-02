@@ -5,11 +5,11 @@ import 'package:lappy/services/chatglm_service.dart';
 /// 消息模型
 class ChatMessage {
   final String id;
-  final String content;
+  String content;
+  int tokens;
   final DateTime time;
   final bool isUser;
   final String? model;
-  final int tokens;
 
   ChatMessage({
     required this.id,
