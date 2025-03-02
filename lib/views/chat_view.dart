@@ -243,14 +243,16 @@ class _ChatViewState extends State<ChatView> {
                           itemCount: currentSession.messages.length,
                           itemBuilder: (context, index) {
                             final message = currentSession.messages[index];
-                            WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+                            if (index == currentSession.messages.length - 1 && message.isUser) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+                            }
                             return MessageBubble(
                               message: message,
                             );
                           },
                         ),
                       ),
-                      if (_chatController.isLoading)
+                      if (_chatController.isLoading && currentSession.messages.isNotEmpty)
                         const Padding(
                           padding: EdgeInsets.all(8.0),
                           child: ProgressRing(),
