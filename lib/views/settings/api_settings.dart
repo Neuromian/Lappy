@@ -28,6 +28,11 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
     _apiKeyController = TextEditingController();
     _baseUrlController = TextEditingController();
     _modelNameController = TextEditingController();
+    
+    // 从本地加载配置
+    _apiConfigManager.loadFromPrefs().then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -175,88 +180,90 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
             child: Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _editingConfig == null ? '新建配置' : '编辑配置',
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                    const SizedBox(height: 16),
-                    InfoLabel(
-                      label: '配置名称',
-                      child: TextBox(
-                        controller: _nameController,
-                        placeholder: '请输入配置名称',
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _editingConfig == null ? '新建配置' : '编辑配置',
+                        style: const TextStyle(fontSize: 20),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    InfoLabel(
-                      label: 'API提供商',
-                      child: ComboBox<ApiProvider>(
-                        value: _selectedProvider,
-                        items: ApiProvider.values
-                            .map((e) => ComboBoxItem<ApiProvider>(
-                                  value: e,
-                                  child: Text(e.displayName),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _selectedProvider = value;
-                              // 如果选择了 ChatGLM，自动填入默认的基础 URL
-                              if (value == ApiProvider.chatGLM) {
-                                _baseUrlController.text = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-                              }
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    InfoLabel(
-                      label: 'API密钥',
-                      child: TextBox(
-                        controller: _apiKeyController,
-                        placeholder: '请输入API密钥',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    InfoLabel(
-                      label: '基础URL',
-                      child: TextBox(
-                        controller: _baseUrlController,
-                        placeholder: '请输入基础URL',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    InfoLabel(
-                      label: '模型名称',
-                      child: TextBox(
-                        controller: _modelNameController,
-                        placeholder: '请输入模型名称',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (_editingConfig != null)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: Button(
-                              child: const Text('取消'),
-                              onPressed: _clearForm,
-                            ),
-                          ),
-                        FilledButton(
-                          child: Text(_editingConfig == null ? '添加' : '保存'),
-                          onPressed: _saveConfig,
+                      const SizedBox(height: 16),
+                      InfoLabel(
+                        label: '配置名称',
+                        child: TextBox(
+                          controller: _nameController,
+                          placeholder: '请输入配置名称',
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(height: 8),
+                      InfoLabel(
+                        label: 'API提供商',
+                        child: ComboBox<ApiProvider>(
+                          value: _selectedProvider,
+                          items: ApiProvider.values
+                              .map((e) => ComboBoxItem<ApiProvider>(
+                                    value: e,
+                                    child: Text(e.displayName),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                _selectedProvider = value;
+                                // 如果选择了 ChatGLM，自动填入默认的基础 URL
+                                if (value == ApiProvider.chatGLM) {
+                                  _baseUrlController.text = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+                                }
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      InfoLabel(
+                        label: 'API密钥',
+                        child: TextBox(
+                          controller: _apiKeyController,
+                          placeholder: '请输入API密钥',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      InfoLabel(
+                        label: '基础URL',
+                        child: TextBox(
+                          controller: _baseUrlController,
+                          placeholder: '请输入基础URL',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      InfoLabel(
+                        label: '模型名称',
+                        child: TextBox(
+                          controller: _modelNameController,
+                          placeholder: '请输入模型名称',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (_editingConfig != null)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: Button(
+                                child: const Text('取消'),
+                                onPressed: _clearForm,
+                              ),
+                            ),
+                          FilledButton(
+                            child: Text(_editingConfig == null ? '添加' : '保存'),
+                            onPressed: _saveConfig,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -25,13 +25,18 @@ class AppSettings extends GetxController {
     if (_initialized.value) return;
 
     try {
+      debugPrint('开始初始化应用设置...');
       final prefs = await SharedPreferences.getInstance();
       
       // 加载API配置
       final apiConfigsJson = prefs.getString('api_configs');
+      debugPrint('从SharedPreferences加载API配置: $apiConfigsJson');
       if (apiConfigsJson != null) {
         final List<dynamic> apiConfigs = jsonDecode(apiConfigsJson);
         apiConfigManager.loadFromJson(apiConfigs);
+        debugPrint('API配置加载成功');
+      } else {
+        debugPrint('未找到已保存的API配置');
       }
       
       // 加载快捷键配置
@@ -55,6 +60,7 @@ class AppSettings extends GetxController {
       
       _initialized.value = true;
       update();
+      debugPrint('应用设置初始化完成');
     } catch (e) {
       debugPrint('初始化设置失败: $e');
     }

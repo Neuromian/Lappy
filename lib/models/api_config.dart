@@ -97,24 +97,53 @@ class ApiConfigManager extends GetxController {
   // 获取当前选中的配置
   ApiConfig? get selectedConfig => _selectedConfig.value;
 
+  // 从JSON加载配置
+  void loadFromJson(List<dynamic> json) {
+    _configs.clear();
+    for (var item in json) {
+      _configs.add(ApiConfig.fromJson(item));
+    }
+    // 设置默认配置
+    final defaultConfig = _configs.firstWhereOrNull((config) => config.isDefault);
+    _selectedConfig.value = defaultConfig ?? (_configs.isNotEmpty ? _configs.first : null);
+    update();
+  }
+
+  // 转换为JSON
+  List<Map<String, dynamic>> toJson() {
+    return _configs.map((config) => config.toJson()).toList();
+  }
+
   // 添加配置
   void addConfig(ApiConfig config) {
+    debugPrint('开始添加配置: ${config.toJson()}');
+    debugPrint('当前配置列表: ${_configs.length} 个');
+    
     // 如果是第一个配置，设为默认
     if (_configs.isEmpty) {
       config = config.copyWith(isDefault: true);
+      debugPrint('首个配置，设置为默认');
     }
     
     // 如果设置为默认，取消其他默认
     if (config.isDefault) {
-      _configs.value = _configs.map((c) => c.copyWith(isDefault: false)).toList();
+      debugPrint('新配置设置为默认，重置其他配置的默认状态');
+      for (var i = 0; i < _configs.length; i++) {
+        _configs[i] = _configs[i].copyWith(isDefault: false);
+      }
     }
     
     _configs.add(config);
+    debugPrint('配置已添加，当前配置列表: ${_configs.length} 个');
     
     // 如果是默认配置或没有选中配置，选中它
     if (config.isDefault || _selectedConfig.value == null) {
       _selectedConfig.value = config;
+      debugPrint('已选中新配置: ${config.name}');
     }
+    
+    debugPrint('配置添加完成');
+    saveToPrefs(); // 保存配置到本地
   }
 
   // 更新配置
@@ -123,7 +152,11 @@ class ApiConfigManager extends GetxController {
     if (index != -1) {
       // 如果设置为默认，取消其他默认
       if (config.isDefault) {
-        _configs.value = _configs.map((c) => c.id != config.id ? c.copyWith(isDefault: false) : c).toList();
+        for (var i = 0; i < _configs.length; i++) {
+          if (_configs[i].id != config.id) {
+            _configs[i] = _configs[i].copyWith(isDefault: false);
+          }
+        }
       }
       
       _configs[index] = config;
@@ -132,6 +165,8 @@ class ApiConfigManager extends GetxController {
       if (_selectedConfig.value?.id == config.id) {
         _selectedConfig.value = config;
       }
+      
+      saveToPrefs(); // 保存配置到本地
     }
   }
 
@@ -149,6 +184,8 @@ class ApiConfigManager extends GetxController {
     if (wasDefault && _configs.isNotEmpty) {
       _configs[0] = _configs[0].copyWith(isDefault: true);
     }
+    
+    saveToPrefs(); // 保存配置到本地
   }
 
   // 选择配置
@@ -169,32 +206,44 @@ class ApiConfigManager extends GetxController {
       
       // 同时将其设为当前选中的配置
       _selectedConfig.value = _configs[index];
+      
+      saveToPrefs(); // 保存配置到本地
     }
-  }
-
-  // 从JSON加载配置
-  void loadFromJson(List<dynamic> json) {
-    _configs.value = json.map((item) => ApiConfig.fromJson(item)).toList();
-    // 设置默认选中配置
-    _selectedConfig.value = _configs.firstWhereOrNull((c) => c.isDefault) ?? _configs.firstOrNull;
   }
 
   // 保存配置到本地
   Future<void> saveToPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-    final configsJson = _configs.map((c) => c.toJson()).toList();
-    await prefs.setString('api_configs', jsonEncode(configsJson));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final configsJson = jsonEncode(toJson());
+      await prefs.setString('api_configs', configsJson);
+      debugPrint('API配置已成功保存到本地');
+    } catch (e) {
+      debugPrint('保存API配置失败: $e');
+    }
   }
 
   @override
   void onInit() {
     super.onInit();
-    // 监听配置变化并保存
-    ever(_configs, (_) => saveToPrefs());
+    loadFromPrefs(); // 初始化时加载配置
   }
 
-  // 转换为JSON
-  List<Map<String, dynamic>> toJson() {
-    return _configs.map((config) => config.toJson()).toList();
+  // 从本地加载配置
+  Future<void> loadFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final configsJson = prefs.getString('api_configs');
+      debugPrint('加载API配置: $configsJson');
+      if (configsJson != null) {
+        final List<dynamic> configs = jsonDecode(configsJson);
+        loadFromJson(configs);
+        debugPrint('成功加载API配置，共${_configs.length}个配置');
+      } else {
+        debugPrint('未找到已保存的API配置');
+      }
+    } catch (e) {
+      debugPrint('加载API配置失败: $e');
+    }
   }
 }
