@@ -31,7 +31,7 @@ void main() async {
     center: true,
     backgroundColor: Colors.transparent,
     skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.hidden,
+    titleBarStyle: TitleBarStyle.normal,
     title: 'Lappy LLM Client',
   );
 
@@ -54,7 +54,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FluentApp(
-      title: 'Lappy LLM Client',
+      title: 'Lappy',
       themeMode: ThemeMode.light,
       color: Colors.green,
       darkTheme: FluentThemeData(
@@ -101,7 +101,7 @@ class _MainScreenState extends State<MainScreen>
 
   void _init() async {
     await trayManager.setIcon('assets/images/tray_icon.png');
-    await trayManager.setToolTip('Lappy LLM Client');
+    await trayManager.setToolTip('Lappy');
 
     final menu = Menu(items: [
       MenuItem(
@@ -151,7 +151,7 @@ class _MainScreenState extends State<MainScreen>
   Widget build(BuildContext context) {
     return NavigationView(
       appBar: const NavigationAppBar(
-        title: Text('Lappy LLM Client'),
+        title: Text('Lappy'),
       ),
       content: const ChatView(),
     );
