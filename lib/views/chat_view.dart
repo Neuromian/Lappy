@@ -120,10 +120,13 @@ class _ChatViewState extends State<ChatView> {
       context: context,
       builder: (context) => ContentDialog(
         title: const Text('重命名会话'),
-        content: TextBox(
-          controller: titleController,
-          placeholder: '请输入新的会话名称',
-          autofocus: true,
+        content: SizedBox(
+          height: 40,
+          child: TextBox(
+            controller: titleController,
+            placeholder: '请输入新的会话名称',
+            autofocus: true,
+          ),
         ),
         actions: [
           Button(
