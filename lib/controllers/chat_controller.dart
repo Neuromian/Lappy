@@ -98,12 +98,18 @@ class ChatController extends GetxController {
     if (index != -1) {
       _sessions.removeAt(index);
       
-      // 如果删除的是当前会话，切换到第一个会话
-      if (_currentSessionIndex.value == index) {
-        _currentSessionIndex.value = _sessions.isEmpty ? -1 : 0;
-      } else if (_currentSessionIndex.value > index) {
-        // 如果删除的会话在当前会话之前，当前会话索引减1
-        _currentSessionIndex.value--;
+      // 如果删除后没有会话，创建一个新会话
+      if (_sessions.isEmpty) {
+        createNewSession();
+        _currentSessionIndex.value = 0;
+      } else {
+        // 如果删除的是当前会话，切换到第一个会话
+        if (_currentSessionIndex.value == index) {
+          _currentSessionIndex.value = 0;
+        } else if (_currentSessionIndex.value > index) {
+          // 如果删除的会话在当前会话之前，当前会话索引减1
+          _currentSessionIndex.value--;
+        }
       }
       
       _saveSessions();

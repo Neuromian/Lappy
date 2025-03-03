@@ -150,7 +150,7 @@ class _ChatViewState extends State<ChatView> {
       final sessions = _chatController.sessions;
       
       final navigationPane = NavigationPane(
-        selected: _chatController.currentSessionIndex,
+        selected: _chatController.sessions.isEmpty ? 0 : _chatController.currentSessionIndex,
         displayMode: PaneDisplayMode.compact,
         size: const NavigationPaneSize(
           openMinWidth: 200,
