@@ -20,6 +20,7 @@ class _ChatViewState extends State<ChatView> {
   final FocusNode _messageFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   late ChatController _chatController;
+  final Map<String, FlyoutController> _flyoutControllers = {};
 
   @override
   void initState() {
@@ -32,6 +33,7 @@ class _ChatViewState extends State<ChatView> {
     _messageController.dispose();
     _messageFocusNode.dispose();
     _scrollController.dispose();
+    _flyoutControllers.values.forEach((controller) => controller.dispose());
     super.dispose();
   }
 
@@ -164,42 +166,46 @@ class _ChatViewState extends State<ChatView> {
             title: Text(entry.value.title),
             body: const SizedBox.shrink(),
             onTap: () => _chatController.switchSession(entry.key),
-            trailing: IconButton(
-              icon: const Icon(FluentIcons.more),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => ContentDialog(
-                    title: Text(entry.value.title),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Button(
-                          child: const Text('重命名'),
+            trailing: FlyoutTarget(
+              controller: _flyoutControllers.putIfAbsent(entry.value.id, () => FlyoutController()),
+              child: IconButton(
+                icon: const Icon(FluentIcons.more),
+                onPressed: () {
+                  _flyoutControllers[entry.value.id]?.showFlyout(
+                    barrierDismissible: true,
+                    dismissOnPointerMoveAway: false,
+                    dismissWithEsc: true,
+                    builder: (context) {
+                      return MenuFlyout(items: [
+                        MenuFlyoutItem(
+                          leading: const Icon(FluentIcons.rename),
+                          text: const Text('重命名'),
                           onPressed: () {
-                            Navigator.pop(context);
+                            Flyout.of(context).close();
                             _renameSession(entry.value.id, entry.value.title);
                           },
                         ),
-                        const SizedBox(height: 8),
-                        Button(
-                          child: const Text('删除'),
+                        MenuFlyoutItem(
+                          leading: const Icon(FluentIcons.delete),
+                          text: const Text('删除'),
                           onPressed: () {
-                            Navigator.pop(context);
+                            Flyout.of(context).close();
                             _deleteSession(entry.value.id);
                           },
                         ),
-                      ],
-                    ),
-                    actions: [
-                      Button(
-                        child: const Text('关闭'),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                        MenuFlyoutItem(
+                          leading: const Icon(FluentIcons.download),
+                          text: const Text('导出'),
+                          onPressed: () {
+                            Flyout.of(context).close();
+                            // TODO: 实现导出功能
+                          },
+                        ),
+                      ]);
+                    },
+                  );
+                },
+              ),
             ),
           )),
         ],

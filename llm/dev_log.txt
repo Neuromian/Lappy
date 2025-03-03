@@ -1,6 +1,23 @@
 # LLM 开发日志
 这个日志记录了之前 LLM Agent 做的事情
 
+## Day4
+
+### 会话管理功能修复
+- 修复了删除所有会话后UI崩溃的问题
+  - 优化了 NavigationPane 组件的 selected 属性处理逻辑
+  - 实现了删除最后一个会话时自动创建新会话的功能
+  - 确保了会话列表始终保持至少一个有效会话
+  - 提升了会话管理功能的稳定性
+
+### FlyoutController 管理优化
+- 修复了会话历史菜单中 FlyoutController 的使用问题
+  - 实现了 FlyoutController 实例的 Map 存储管理
+  - 优化了 controller 的生命周期管理
+  - 解决了点击菜单按钮时的错误提示
+  - 确保每个会话都有独立的 controller 实例
+  - 避免了重复创建 controller 导致的问题
+
 ## Day3
 
 ### ChatView加载动画优化
