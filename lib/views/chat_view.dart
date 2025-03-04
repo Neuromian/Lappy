@@ -6,6 +6,9 @@ import 'package:lappy/controllers/chat_controller.dart';
 import 'package:lappy/services/chat_service.dart';
 import 'package:lappy/models/app_settings.dart';
 import 'package:lappy/views/settings_view.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 
 /// 聊天视图组件
 class ChatView extends StatefulWidget {
@@ -201,7 +204,43 @@ class _ChatViewState extends State<ChatView> {
                           text: const Text('导出'),
                           onPressed: () {
                             Flyout.of(context).close();
-                            // TODO: 实现导出功能
+                            showDialog(
+                              context: context,
+                              builder: (context) => ContentDialog(
+                                title: const Text('导出会话'),
+                                content: const Text('确定要导出当前会话吗？将会打开文件保存对话框。'),
+                                actions: [
+                                  Button(
+                                    child: const Text('取消'),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                  FilledButton(
+                                    child: const Text('确认'),
+                                    onPressed: () async {
+                                      Navigator.pop(context);
+                                      final session = _chatController.sessions.firstWhere((s) => s.id == entry.value.id);
+                                      final messages = session.messages.map((m) => m.toJson()).toList();
+                                      final data = {
+                                        'id': session.id,
+                                        'title': session.title,
+                                        'messages': messages,
+                                      };
+                                      final jsonString = jsonEncode(data);
+                                      // 清理文件名，移除Windows不允许的特殊字符
+                                      final cleanTitle = session.title.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+                                      final result = await FilePicker.platform.saveFile(
+                                        fileName: '${cleanTitle}.json',
+                                        type: FileType.custom,
+                                        allowedExtensions: ['json'],
+                                      );
+                                      if (result != null) {
+                                        await File(result).writeAsString(jsonString);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
                           },
                         ),
                       ]);
