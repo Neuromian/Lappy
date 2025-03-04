@@ -328,6 +328,8 @@ class _ChatViewState extends State<ChatView> {
                                     placeholder: '输入消息...',
                                     onSubmitted: (_) => _sendMessage(),
                                     style: const TextStyle(fontSize: 16),
+                                    maxLines: 5,
+                                    minLines: 1,
                                     decoration: ButtonState.all(BoxDecoration(
                                       color: FluentTheme.of(context).micaBackgroundColor.withOpacity(0.7),
                                       border: null,
