@@ -9,6 +9,7 @@ import 'package:lappy/views/settings_view.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 /// 聊天视图组件
 class ChatView extends StatefulWidget {
@@ -394,6 +395,11 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 预处理Markdown文本，确保#后有空格
+    String processMarkdown(String text) {
+      return text.replaceAll(RegExp(r'#(?!\s|#)'), '# ');
+    }
+
     return Align(
       alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: !message.isUser && message.content.isEmpty
@@ -427,9 +433,28 @@ class MessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SelectableText(
-              message.content,
-              style: const TextStyle(fontSize: 15, height: 1.4),
+            SelectionArea(
+              child: MarkdownBody(
+                data: processMarkdown(message.content),
+                styleSheet: MarkdownStyleSheet(
+                  p: const TextStyle(fontSize: 15, height: 1.4, fontFamily: 'MiSans'),
+                  h1: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'MiSans'),
+                  h2: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'MiSans'),
+                  h3: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'MiSans'),
+                  h4: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'MiSans'),
+                  h5: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'MiSans'),
+                  h6: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'MiSans'),
+                  em: const TextStyle(fontFamily: 'MiSans'),
+                  strong: const TextStyle(fontFamily: 'MiSans'),
+                  blockquote: const TextStyle(fontFamily: 'MiSans'),
+                  listBullet: const TextStyle(fontFamily: 'MiSans'),
+                  code: TextStyle(fontSize: 14, backgroundColor: FluentTheme.of(context).resources.cardBackgroundFillColorDefault.withOpacity(0.3), fontFamily: 'MiSans'),
+                  codeblockDecoration: BoxDecoration(
+                    color: FluentTheme.of(context).resources.cardBackgroundFillColorDefault.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 6),
             DefaultTextStyle(
