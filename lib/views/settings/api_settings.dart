@@ -166,7 +166,10 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
                           ),
                         ],
                       ),
-                      onPressed: () => _loadConfigForEdit(config),
+                      onPressed: () {
+                        _apiConfigManager.selectConfig(config.id);
+                        _loadConfigForEdit(config);
+                      },
                     );
                   },
                 );
@@ -214,6 +217,8 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
                                 // 如果选择了 ChatGLM，自动填入默认的基础 URL
                                 if (value == ApiProvider.chatGLM) {
                                   _baseUrlController.text = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+                                } else if (value == ApiProvider.deepseek) {
+                                  _baseUrlController.text = 'https://api.deepseek.com/v1/chat/completions';
                                 }
                               });
                             }

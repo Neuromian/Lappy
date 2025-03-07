@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:lappy/models/api_config.dart';
 import 'package:lappy/services/chatglm_service.dart';
+import 'package:lappy/services/deepseek_service.dart';
 
 /// 消息模型
 class ChatMessage {
@@ -141,6 +142,8 @@ class ChatServiceFactory {
         return AnthropicServiceAdapter();
       case ApiProvider.gemini:
         return GeminiServiceAdapter();
+      case ApiProvider.deepseek:
+        return DeepseekServiceAdapter();
       case ApiProvider.custom:
       default:
         return CustomServiceAdapter();
@@ -297,5 +300,54 @@ class CustomServiceAdapter implements ChatService {
     await Future.delayed(const Duration(seconds: 1)); // 模拟API调用
     
     return Stream.fromIterable(['这是', '自定义API', '的', '模拟', '流式', '响应']);
+  }
+}
+
+/// Deepseek服务适配器
+class DeepseekServiceAdapter implements ChatService {
+  @override
+  Future<ChatMessage> sendMessage(List<ChatMessage> messages, ApiConfig config) async {
+    // 需要先导入 DeepseekService
+    final service = DeepseekService(config);
+    final deepseekMessages = messages.map((m) => DeepseekMessage(
+      role: m.isUser ? 'user' : 'assistant',
+      content: m.content,
+    )).toList();
+    
+    try {
+      final response = await service.sendMessage(deepseekMessages);
+      return ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        content: response,
+        time: DateTime.now(),
+        isUser: false,
+        model: config.modelName,
+        tokens: response.split(' ').length, // 简单估算token数
+      );
+    } catch (e) {
+      return ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        content: '发送消息失败: $e',
+        time: DateTime.now(),
+        isUser: false,
+        model: config.modelName,
+        tokens: 0,
+      );
+    }
+  }
+
+  @override
+  Future<Stream<String>> sendMessageStream(List<ChatMessage> messages, ApiConfig config) async {
+    final service = DeepseekService(config);
+    final deepseekMessages = messages.map((m) => DeepseekMessage(
+      role: m.isUser ? 'user' : 'assistant',
+      content: m.content,
+    )).toList();
+    
+    try {
+      return await service.sendMessageStream(deepseekMessages);
+    } catch (e) {
+      return Stream.value('发送消息失败: $e');
+    }
   }
 }

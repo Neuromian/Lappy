@@ -9,6 +9,7 @@ enum ApiProvider {
   anthropic('Anthropic'),
   gemini('Gemini'),
   chatGLM('ChatGLM'),
+  deepseek('Deepseek'),
   custom('自定义');
 
   final String displayName;
@@ -190,8 +191,15 @@ class ApiConfigManager extends GetxController {
 
   // 选择配置
   void selectConfig(String id) {
-    final config = _configs.firstWhere((c) => c.id == id, orElse: () => _configs.first);
+    final config = _configs.firstWhere((c) => c.id == id);
+    // 更新选中的配置
     _selectedConfig.value = config;
+    // 确保只有当前选中的配置被标记为默认
+    for (var i = 0; i < _configs.length; i++) {
+      _configs[i] = _configs[i].copyWith(isDefault: _configs[i].id == id);
+    }
+    update();
+    saveToPrefs(); // 保存更改到本地
   }
 
   // 设置默认配置
