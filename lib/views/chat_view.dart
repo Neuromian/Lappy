@@ -320,40 +320,61 @@ class _ChatViewState extends State<ChatView> {
                                 ),
                               ],
                             ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: TextBox(
-                                    controller: _messageController,
-                                    focusNode: _messageFocusNode,
-                                    placeholder: '输入消息...',
-                                    onSubmitted: (_) => _sendMessage(),
-                                    style: const TextStyle(fontSize: 16),
-                                    maxLines: 5,
-                                    minLines: 1,
-                                    decoration: ButtonState.all(BoxDecoration(
-                                      color: FluentTheme.of(context).micaBackgroundColor.withOpacity(0.7),
-                                      border: null,
-                                      borderRadius: BorderRadius.circular(16),
-                                    )),
-                                    suffix: IconButton(
-                                      icon: const Icon(FluentIcons.send),
-                                      onPressed: _sendMessage,
-                                      style: ButtonStyle(
-                                        padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                                        backgroundColor: WidgetStateProperty.resolveWith((states) {
-                                          if (states.isHovering) {
-                                            return Colors.green.withAlpha(40);
-                                          }
-                                          return Colors.transparent;
-                                        }),
-                                        shape: ButtonState.all(const CircleBorder()),
-                                      ),
+                            child: GetBuilder<AppSettings>(
+                              builder: (settings) {
+                                final shortcutConfig = settings.shortcutConfigManager.config;
+                                final List<LogicalKeyboardKey> keys = [];
+                                if (shortcutConfig.sendCtrlModifier) keys.add(LogicalKeyboardKey.control);
+                                if (shortcutConfig.sendAltModifier) keys.add(LogicalKeyboardKey.alt);
+                                if (shortcutConfig.sendShiftModifier) keys.add(LogicalKeyboardKey.shift);
+                                keys.add(shortcutConfig.sendKey);
+                                final keySet = LogicalKeySet.fromSet(keys.toSet());
+                                return Shortcuts(
+                                  shortcuts: <LogicalKeySet, Intent>{
+                                    keySet: const SendMessageIntent(),
+                                  },
+                                  child: Actions(
+                                    actions: <Type, Action<Intent>>{
+                                      SendMessageIntent: SendMessageAction(_sendMessage),
+                                    },
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextBox(
+                                            controller: _messageController,
+                                            focusNode: _messageFocusNode,
+                                            placeholder: '输入消息...',
+                                            onSubmitted: (_) => _sendMessage(),
+                                            style: const TextStyle(fontSize: 16),
+                                            maxLines: 5,
+                                            minLines: 1,
+                                            decoration: ButtonState.all(BoxDecoration(
+                                              color: FluentTheme.of(context).micaBackgroundColor.withOpacity(0.7),
+                                              border: null,
+                                              borderRadius: BorderRadius.circular(16),
+                                            )),
+                                            suffix: IconButton(
+                                              icon: const Icon(FluentIcons.send),
+                                              onPressed: _sendMessage,
+                                              style: ButtonStyle(
+                                                padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
+                                                backgroundColor: WidgetStateProperty.resolveWith((states) {
+                                                  if (states.isHovering) {
+                                                    return Colors.green.withAlpha(40);
+                                                  }
+                                                  return Colors.transparent;
+                                                }),
+                                                shape: ButtonState.all(const CircleBorder()),
+                                              ),
+                                            ),
+                                            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
                                   ),
-                                ),
-                              ],
+                                );
+                              }
                             ),
                           ),
                         ),
@@ -478,5 +499,21 @@ class MessageBubble extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class SendMessageIntent extends Intent {
+  const SendMessageIntent();
+}
+
+class SendMessageAction extends Action<SendMessageIntent> {
+  final VoidCallback onSend;
+
+  SendMessageAction(this.onSend);
+
+  @override
+  Object? invoke(SendMessageIntent intent) {
+    onSend();
+    return null;
   }
 }

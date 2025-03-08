@@ -1,6 +1,9 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:lappy/models/app_settings.dart';
+import 'package:lappy/models/shortcut_config.dart';
 
 class ShortcutSettingsPage extends StatefulWidget {
   const ShortcutSettingsPage({super.key});
@@ -11,8 +14,14 @@ class ShortcutSettingsPage extends StatefulWidget {
 
 class _ShortcutSettingsPageState extends State<ShortcutSettingsPage> {
   bool _isRecording = false;
-  String _currentShortcut = 'Ctrl + Enter';
+  late ShortcutConfigManager _configManager;
   final FocusNode _focusNode = FocusNode();
+  
+  @override
+  void initState() {
+    super.initState();
+    _configManager = AppSettings.to.shortcutConfigManager;
+  }
   
   @override
   void dispose() {
@@ -33,46 +42,46 @@ class _ShortcutSettingsPageState extends State<ShortcutSettingsPage> {
     final Set<LogicalKeyboardKey> pressedKeys = RawKeyboard.instance.keysPressed;
     if (pressedKeys.isEmpty) return;
 
-    final List<String> keyNames = [];
-    
-    if (pressedKeys.contains(LogicalKeyboardKey.controlLeft) ||
-        pressedKeys.contains(LogicalKeyboardKey.controlRight)) {
-      keyNames.add('Ctrl');
-    }
-    if (pressedKeys.contains(LogicalKeyboardKey.altLeft) ||
-        pressedKeys.contains(LogicalKeyboardKey.altRight)) {
-      keyNames.add('Alt');
-    }
-    if (pressedKeys.contains(LogicalKeyboardKey.shiftLeft) ||
-        pressedKeys.contains(LogicalKeyboardKey.shiftRight)) {
-      keyNames.add('Shift');
-    }
-
-    // 添加非修饰键
+    // 获取非修饰键
+    LogicalKeyboardKey? mainKey;
     for (final key in pressedKeys) {
       if (![LogicalKeyboardKey.controlLeft, LogicalKeyboardKey.controlRight,
            LogicalKeyboardKey.altLeft, LogicalKeyboardKey.altRight,
            LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.shiftRight]
           .contains(key)) {
-        String keyLabel = key.keyLabel;
-        if (keyLabel.length == 1) {
-          keyLabel = keyLabel.toUpperCase();
-        }
-        keyNames.add(keyLabel);
+        mainKey = key;
+        break;
       }
     }
 
-    if (keyNames.isNotEmpty) {
+    if (mainKey != null) {
+      // 检测修饰键状态
+      bool hasCtrl = pressedKeys.contains(LogicalKeyboardKey.controlLeft) ||
+                    pressedKeys.contains(LogicalKeyboardKey.controlRight);
+      bool hasAlt = pressedKeys.contains(LogicalKeyboardKey.altLeft) ||
+                   pressedKeys.contains(LogicalKeyboardKey.altRight);
+      bool hasShift = pressedKeys.contains(LogicalKeyboardKey.shiftLeft) ||
+                     pressedKeys.contains(LogicalKeyboardKey.shiftRight);
+
+      // 更新配置
+      final newConfig = _configManager.config.copyWith(
+        sendKey: mainKey,
+        sendCtrlModifier: hasCtrl,
+        sendAltModifier: hasAlt,
+        sendShiftModifier: hasShift
+      );
+      _configManager.updateConfig(newConfig);
+
       setState(() {
-        _currentShortcut = keyNames.join(' + ');
         _isRecording = false;
       });
     }
   }
 
   void _resetShortcut() {
+    final defaultConfig = ShortcutConfig();
+    _configManager.updateConfig(defaultConfig);
     setState(() {
-      _currentShortcut = 'Ctrl + Enter';
       _isRecording = false;
     });
   }
@@ -109,7 +118,7 @@ class _ShortcutSettingsPageState extends State<ShortcutSettingsPage> {
                               borderRadius: BorderRadius.circular(4.0),
                             ),
                             child: Text(
-                              _isRecording ? '请按下新的快捷键组合...' : _currentShortcut,
+                              _isRecording ? '请按下新的快捷键组合...' : _configManager.config.getSendKeyString(),
                               style: const TextStyle(fontSize: 16),
                             ),
                           ),
