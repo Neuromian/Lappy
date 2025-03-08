@@ -293,9 +293,12 @@ class _ChatViewState extends State<ChatView> {
                           itemCount: currentSession.messages.length,
                           itemBuilder: (context, index) {
                             final message = currentSession.messages[index];
-                            if (index == currentSession.messages.length - 1 && message.isUser) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-                            }
+                            // 当消息列表更新时，自动滚动到底部
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (index == currentSession.messages.length - 1) {
+                                _scrollToBottom();
+                              }
+                            });
                             return MessageBubble(
                               message: message,
                             );
