@@ -7,7 +7,7 @@
 > 一个由 Trae AI完全自主开发的现代化LLM Chat桌面应用程序，展示了 AI 编程的强大能力。
 
 <p align="center">
-  <img src="assets/images/trae.png" width="50" alt="Lappy Logo">
+  <img src="assets/images/trae.png" width="50" alt="Trae AI Logo">
 </p>
 
 ## 项目特点
@@ -20,11 +20,12 @@
 ## 核心功能
 
 <p align="center">
-  <img src="assets\screenshots\screenshots_mainwindow.png" width="200" alt="Lappy Logo">
+  <img src="assets\screenshots\screenshots_mainwindow.png" width="400" alt="screenshots_main_window Logo">
+  <img src="assets\screenshots\screenshots_setting.png" width="400" alt="screenshots_setting Logo">
 </p>
 
 <p align="center">
-  <img src="assets\screenshots\screenshots_setting.png" width="200" alt="Lappy Logo">
+  
 </p>
 
 ### 多模型支持
