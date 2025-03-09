@@ -15,6 +15,7 @@ import 'package:lappy/views/chat_view.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:get/get.dart';
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -100,7 +101,11 @@ class _MainScreenState extends State<MainScreen>
   }
 
   void _init() async {
-    await trayManager.setIcon('assets/images/tray_icon.png');
+    await trayManager.setIcon(
+      Platform.isWindows
+        ? 'assets/images/Lappy.ico'
+        : 'assets/images/Lappy.png',
+    );
     await trayManager.setToolTip('Lappy');
 
     final menu = Menu(items: [

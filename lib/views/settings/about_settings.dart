@@ -14,7 +14,7 @@ class AboutSettingsPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const FlutterLogo(size: 100),
+            Image.asset('assets/images/Lappy.png', width: 100, height: 100),
             const SizedBox(height: 20),
             const Text(
               'Lappy',
