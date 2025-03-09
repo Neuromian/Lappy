@@ -32,7 +32,7 @@ void main() async {
     backgroundColor: Colors.transparent,
     skipTaskbar: false,
     titleBarStyle: TitleBarStyle.normal,
-    title: 'Lappy LLM Client',
+    title: 'Lappy',
   );
 
   await windowManager.waitUntilReadyToShow(windowOptions, () async {
@@ -150,9 +150,9 @@ class _MainScreenState extends State<MainScreen>
   @override
   Widget build(BuildContext context) {
     return NavigationView(
-      appBar: const NavigationAppBar(
-        title: Text('Lappy'),
-      ),
+      // appBar: const NavigationAppBar(
+      //   title: Text('Lappy'),
+      // ),
       content: const ChatView(),
     );
   }
