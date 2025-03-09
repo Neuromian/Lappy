@@ -27,6 +27,7 @@ dependencies:
   google_fonts: ^6.1.0
   get: ^4.7.2
   flutter_markdown: ^0.7.6+2
+  url_launcher: ^6.2.4
 
 dev_dependencies:
   flutter_test:

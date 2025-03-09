@@ -138,10 +138,6 @@ class ChatServiceFactory {
         return ChatGLMServiceAdapter();
       case ApiProvider.openAI:
         return OpenAIServiceAdapter();
-      case ApiProvider.anthropic:
-        return AnthropicServiceAdapter();
-      case ApiProvider.gemini:
-        return GeminiServiceAdapter();
       case ApiProvider.deepseek:
         return DeepseekServiceAdapter();
       case ApiProvider.custom:

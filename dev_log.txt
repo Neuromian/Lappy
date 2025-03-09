@@ -1,0 +1,5 @@
+# 开发日志
+
+## Day 9
+
+- 优化了关于软件页面的GitHub图标，将其从FluentIcons.open_source更改为FluentIcons.git_hub_logo，使其更准确地表示链接目的地。

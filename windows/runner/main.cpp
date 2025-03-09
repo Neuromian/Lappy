@@ -17,6 +17,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   // plugins.
   ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
+  // Register the window class for protocol handling
+  WNDCLASS window_class = {0};
+  window_class.lpfnWndProc = DefWindowProc;
+  window_class.hInstance = instance;
+  window_class.lpszClassName = L"FLUTTER_RUNNER_URL_PROTOCOL";
+  RegisterClass(&window_class);
+
   flutter::DartProject project(L"data");
 
   std::vector<std::string> command_line_arguments =

@@ -6,8 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// API供应商枚举
 enum ApiProvider {
   openAI('OpenAI'),
-  anthropic('Anthropic'),
-  gemini('Gemini'),
   chatGLM('ChatGLM'),
   deepseek('Deepseek'),
   custom('自定义');

@@ -3,6 +3,7 @@ import 'package:lappy/models/app_settings.dart';
 import 'package:lappy/views/settings/api_settings.dart';
 import 'package:lappy/views/settings/shortcut_settings.dart';
 import 'package:lappy/views/settings/data_settings.dart';
+import 'package:lappy/views/settings/about_settings.dart';
 
 /// 设置页面
 class SettingsView extends StatefulWidget {
@@ -96,6 +97,11 @@ class _SettingsViewState extends State<SettingsView> {
             icon: const Icon(FluentIcons.database),
             title: const Text('数据管理'),
             body: const DataSettingsPage(),
+          ),
+          PaneItem(
+            icon: const Icon(FluentIcons.info),
+            title: const Text('关于软件'),
+            body: const AboutSettingsPage(),
           ),
         ],
       ),
