@@ -1,15 +1,31 @@
+<p align="center">
+  <img src="assets/images/Lappy.png" width="200" alt="Lappy Logo">
+</p>
+
 # Lappy - 桌面应用
 
-> 一个由 Trae 完全自主开发的现代化LLM Chat桌面应用程序，展示了 AI 编程的强大能力。
+> 一个由 Trae AI完全自主开发的现代化LLM Chat桌面应用程序，展示了 AI 编程的强大能力。
+
+<p align="center">
+  <img src="assets/images/trae.png" width="50" alt="Lappy Logo">
+</p>
 
 ## 项目特点
 
-- 🤖 完全由 Trae 编写，展示了 AI 辅助开发的未来
+- 🤖 完全由 Trae AI编写，展示了 AI 辅助开发的未来
 - 🎯 基于 Flutter 构建的跨平台桌面应用
 - 🎨 采用 fluent_ui 打造现代化 Windows 风格界面
 - ⚡ 使用 GetX 实现高效的状态管理
 
 ## 核心功能
+
+<p align="center">
+  <img src="assets\screenshots\screenshots_mainwindow.png" width="200" alt="Lappy Logo">
+</p>
+
+<p align="center">
+  <img src="assets\screenshots\screenshots_setting.png" width="200" alt="Lappy Logo">
+</p>
 
 ### 多模型支持
 - 支持 OpenAI 兼容API
